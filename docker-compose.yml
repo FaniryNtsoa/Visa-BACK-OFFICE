@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: backoffice-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: backoffice_db
+      POSTGRES_USER: backoffice_user
+      POSTGRES_PASSWORD: backoffice_pwd
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
