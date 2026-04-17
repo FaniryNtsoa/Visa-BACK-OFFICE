@@ -1,0 +1,137 @@
+situation_familiale :
+    id_situation_familiale  PK  (Célibataire, Marié(e), Divorcé(e), Veuf/Veuve)
+    situation_familiale
+
+nationalite :
+    id_nationalite  PK
+    nationalite
+    code_pays       
+
+passeport :
+    id_passeport        PK
+    numero_passeport
+    date_delivrance
+    date_expiration
+    lieu_delivrance
+    pays_delivrance    
+
+demandeur :
+    id_demandeur        PK
+    nom
+    prenom
+    date_naissance
+    lieu_naissance
+    genre               
+    adresse_mada        
+    id_situation_familiale  FK
+    id_nationalite          FK
+    id_passeport            FK
+
+-- Pour visa TRAVAILLEUR : infos sur l'employeur à Madagascar
+employeur_madagascar :
+    id_employeur            PK
+    raison_sociale          -- nom de l'entreprise
+    numero_nif              -- Numéro d'Identification Fiscale
+    numero_stat             -- numéro statistique entreprise Mada
+    secteur_activite
+    adresse
+    telephone
+    email
+    nom_responsable         -- nom du DRH ou directeur signataire
+    fonction_responsable
+
+-- Pour visa INVESTISSEUR : infos sur le projet d'investissement
+projet_investissement :
+    id_projet               PK
+    nom_projet
+    secteur                 -- Agriculture, Tourisme, Industrie, etc.
+    description_projet
+    montant_investissement  -- en Ariary ou USD
+    devise                  -- MGA, USD, EUR
+    zone_investissement     -- région à Madagascar
+    nombre_emplois_crees    -- emplois prévus
+    duree_projet_mois
+
+-- Lien demande ↔ employeur (visa travailleur)
+demande_travailleur :
+    id_demande_travailleur  PK
+    id_demande              FK
+    id_employeur            FK
+    poste_occupe            -- titre du poste
+    type_contrat            -- CDI / CDD / Mission
+    duree_contrat_mois
+    salaire_mensuel
+    devise_salaire
+
+-- Lien demande ↔ investissement (visa investisseur)
+demande_investisseur :
+    id_demande_investisseur PK
+    id_demande              FK
+    id_projet               FK
+    forme_juridique         -- SA, SARL, EI, etc.
+    numero_registre_commerce -- si entreprise déjà créée
+
+type_visa :
+    id_type_visa    PK
+    type_visa       -- ex: "Visa Investisseur", "Visa Travailleur", "Visa Résident"
+    duree_validite_mois
+    description
+
+type_demande :
+    id_type_demande PK
+    type_demande    -- ex: "Nouvelle demande", "Renouvellement", "Transformation"
+
+status_demande :
+    id_status   PK
+    status      -- En attente, En cours, Approuvé, Rejeté, Complément requis
+
+num_visa_transformable :
+    id_visa_transformable   PK 
+    id_demandeur            FK
+    num_visa_transformable
+    date_expiration_visa
+
+demande :
+    id_demande              PK
+    date_demande
+    id_visa_transformable   FK  
+    id_type_demande         FK
+    id_status               FK
+    id_demandeur            FK
+    id_type_visa            FK 
+
+visa :
+    id_visa         PK
+    date_debut
+    date_fin
+    numero_visa     
+    id_passeport    FK
+    id_demande      FK
+
+carte_residence :
+    id_carte_residence  PK
+    numero_carte        
+    date_debut
+    date_fin
+    is_duplicata    
+    id_carte_residence_duplicata FK
+    id_passeport        FK
+    id_demande          FK
+
+piece_justificative :
+    id_piece_justificative  PK
+    piece_justificative     -- ex: "Extrait de casier judiciaire", "Contrat de travail"
+    description
+
+demande_piece_justificative :
+    id_demande_piece_justificative  PK
+    id_demande              FK
+    id_piece_justificative  FK
+    photo_piece_justificative   -- chemin du fichier
+    date_depot
+
+obligatoire :
+    id_obligatoire          PK
+    id_type_visa            FK
+    nom_colonne_obligatoire
+    nom_table
