@@ -8,6 +8,7 @@ public class CarteResidence {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idCarteResidence;
 
     private String numeroCarte;

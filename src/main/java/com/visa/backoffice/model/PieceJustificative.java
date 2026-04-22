@@ -8,6 +8,7 @@ public class PieceJustificative {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idPieceJustificative;
 
     @Column(name = "piece_justificative", nullable = false)

@@ -9,6 +9,7 @@ public class Passeport {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idPasseport;
 
     @Column(name = "numero_passeport", nullable = false)

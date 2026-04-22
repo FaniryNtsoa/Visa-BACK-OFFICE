@@ -8,6 +8,7 @@ public class Nationalite {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer idNationalite;
 
     private String nationalite;

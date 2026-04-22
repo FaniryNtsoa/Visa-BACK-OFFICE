@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Duplicata carte residence</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>Duplicata carte residence</h1>
+</header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <form th:action="@{/demandes/duplicata}" th:object="${form}" method="post">
+            <h2 class="section-title">Informations</h2>
+            <div class="form-grid">
+                <div>
+                    <label for="numeroPasseport">Numero passeport</label>
+                    <input id="numeroPasseport" type="text" th:field="*{numeroPasseport}" />
+                </div>
+                <div>
+                    <label for="numeroVisa">Numero visa</label>
+                    <input id="numeroVisa" type="text" th:field="*{numeroVisa}" />
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

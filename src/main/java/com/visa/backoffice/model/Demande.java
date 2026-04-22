@@ -9,6 +9,7 @@ public class Demande {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Integer idDemande;
 
     @Column(name = "date_demande")

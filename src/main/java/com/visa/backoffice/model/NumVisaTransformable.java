@@ -8,7 +8,7 @@ public class NumVisaTransformable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_visa_transformable")
+    @Column(name = "id")
     private Integer idVisaTransformable;
 
     @Column(name = "id_demandeur")

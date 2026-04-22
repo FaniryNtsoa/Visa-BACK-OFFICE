@@ -8,6 +8,7 @@ public class Demandeur {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idDemandeur;
 
     private String nom;

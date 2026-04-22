@@ -8,7 +8,7 @@ public class TypeVisa {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_type_visa")
+    @Column(name = "id")
     private Long idTypeVisa;
 
     @Column(name = "type_visa", nullable = false)

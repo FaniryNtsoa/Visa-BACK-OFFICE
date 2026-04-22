@@ -8,6 +8,7 @@ public class DemandeInvestisseur {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idDemandeInvestisseur;
 
     @Column(name = "id_demande")

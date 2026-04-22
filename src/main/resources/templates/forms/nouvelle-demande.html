@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nouvelle demande</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>Nouvelle demande de visa</h1>
+</header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <form th:action="@{/demandes/nouvelle}" th:object="${form}" method="post">
+            <h2 class="section-title">Etat civil</h2>
+            <div class="form-grid">
+                <div>
+                    <label for="nom">Nom</label>
+                    <input id="nom" type="text" th:field="*{nom}" data-field-key="demandeur.nom" />
+                </div>
+                <div>
+                    <label for="prenom">Prenom</label>
+                    <input id="prenom" type="text" th:field="*{prenom}" data-field-key="demandeur.prenom" />
+                </div>
+                <div>
+                    <label for="dateNaissance">Date naissance</label>
+                    <input id="dateNaissance" type="date" th:field="*{dateNaissance}" data-field-key="demandeur.date_naissance" />
+                </div>
+                <div>
+                    <label for="lieuNaissance">Lieu naissance</label>
+                    <input id="lieuNaissance" type="text" th:field="*{lieuNaissance}" data-field-key="demandeur.lieu_naissance" />
+                </div>
+                <div>
+                    <label for="genre">Genre</label>
+                    <select id="genre" th:field="*{genre}" data-field-key="demandeur.genre">
+                        <option value="">-- Choisir --</option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="adresseMada">Adresse a Madagascar</label>
+                    <input id="adresseMada" type="text" th:field="*{adresseMada}" data-field-key="demandeur.adresse_mada" />
+                </div>
+                <div>
+                    <label for="situationFamilialeId">Situation familiale</label>
+                    <select id="situationFamilialeId" th:field="*{situationFamilialeId}" data-field-key="demandeur.id_situation_familiale">
+                        <option value="">-- Choisir --</option>
+                        <option th:each="s : ${situations}" th:value="${s.idSituationFamiliale}" th:text="${s.situationFamiliale}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label for="nationaliteId">Nationalite</label>
+                    <select id="nationaliteId" th:field="*{nationaliteId}" data-field-key="demandeur.id_nationalite">
+                        <option value="">-- Choisir --</option>
+                        <option th:each="n : ${nationalites}" th:value="${n.idNationalite}" th:text="${n.nationalite}"></option>
+                    </select>
+                </div>
+            </div>
+
+            <h2 class="section-title">Passeport</h2>
+            <div class="form-grid">
+                <div>
+                    <label for="numeroPasseport">Numero passeport</label>
+                    <input id="numeroPasseport" type="text" th:field="*{numeroPasseport}" data-field-key="passeport.numero_passeport" />
+                </div>
+                <div>
+                    <label for="dateDelivrance">Date delivrance</label>
+                    <input id="dateDelivrance" type="date" th:field="*{dateDelivrance}" data-field-key="passeport.date_delivrance" />
+                </div>
+                <div>
+                    <label for="dateExpiration">Date expiration</label>
+                    <input id="dateExpiration" type="date" th:field="*{dateExpiration}" data-field-key="passeport.date_expiration" />
+                </div>
+                <div>
+                    <label for="lieuDelivrance">Lieu delivrance</label>
+                    <input id="lieuDelivrance" type="text" th:field="*{lieuDelivrance}" data-field-key="passeport.lieu_delivrance" />
+                </div>
+                <div>
+                    <label for="paysDelivrance">Pays delivrance</label>
+                    <input id="paysDelivrance" type="text" th:field="*{paysDelivrance}" data-field-key="passeport.pays_delivrance" />
+                </div>
+            </div>
+
+            <h2 class="section-title">Information visa</h2>
+            <div class="form-grid">
+                <div>
+                    <label for="typeVisaId">Type visa</label>
+                    <select id="typeVisaId" th:field="*{typeVisaId}" data-type-visa>
+                        <option value="">-- Choisir --</option>
+                        <option th:each="visa : ${typeVisas}"
+                                th:value="${visa.idTypeVisa}"
+                                th:text="${visa.typeVisa}"
+                                th:attr="data-category=${typeVisaCategories[visa.idTypeVisa]}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label for="numVisaTransformable">Numero visa transformable</label>
+                    <input id="numVisaTransformable" type="text" th:field="*{numVisaTransformable}" data-field-key="num_visa_transformable.num_visa_transformable" />
+                </div>
+            </div>
+
+            <div data-section="investisseur" style="display:none;">
+                <h2 class="section-title">Investisseur</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="nomProjet">Nom projet</label>
+                        <input id="nomProjet" type="text" th:field="*{nomProjet}" data-field-key="projet_investissement.nom_projet" />
+                    </div>
+                    <div>
+                        <label for="secteur">Secteur</label>
+                        <input id="secteur" type="text" th:field="*{secteur}" data-field-key="projet_investissement.secteur" />
+                    </div>
+                    <div>
+                        <label for="montantInvestissement">Montant investissement</label>
+                        <input id="montantInvestissement" type="number" step="0.01" th:field="*{montantInvestissement}" data-field-key="projet_investissement.montant_investissement" />
+                    </div>
+                    <div>
+                        <label for="devise">Devise</label>
+                        <input id="devise" type="text" th:field="*{devise}" data-field-key="projet_investissement.devise" />
+                    </div>
+                    <div>
+                        <label for="zoneInvestissement">Zone investissement</label>
+                        <input id="zoneInvestissement" type="text" th:field="*{zoneInvestissement}" data-field-key="projet_investissement.zone_investissement" />
+                    </div>
+                    <div>
+                        <label for="nombreEmploisCrees">Nombre emplois crees</label>
+                        <input id="nombreEmploisCrees" type="number" th:field="*{nombreEmploisCrees}" data-field-key="projet_investissement.nombre_emplois_crees" />
+                    </div>
+                    <div>
+                        <label for="dureeProjetMois">Duree projet (mois)</label>
+                        <input id="dureeProjetMois" type="number" th:field="*{dureeProjetMois}" data-field-key="projet_investissement.duree_projet_mois" />
+                    </div>
+                    <div>
+                        <label for="formeJuridique">Forme juridique</label>
+                        <input id="formeJuridique" type="text" th:field="*{formeJuridique}" data-field-key="demande_investisseur.forme_juridique" />
+                    </div>
+                    <div>
+                        <label for="numeroRegistreCommerce">Numero registre commerce</label>
+                        <input id="numeroRegistreCommerce" type="text" th:field="*{numeroRegistreCommerce}" data-field-key="demande_investisseur.numero_registre_commerce" />
+                    </div>
+                </div>
+                <div>
+                    <label for="descriptionProjet">Description projet</label>
+                    <textarea id="descriptionProjet" th:field="*{descriptionProjet}" data-field-key="projet_investissement.description_projet"></textarea>
+                </div>
+            </div>
+
+            <div data-section="travailleur" style="display:none;">
+                <h2 class="section-title">Travailleur - Employeur</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="raisonSociale">Raison sociale</label>
+                        <input id="raisonSociale" type="text" th:field="*{raisonSociale}" data-field-key="employeur_madagascar.raison_sociale" />
+                    </div>
+                    <div>
+                        <label for="numeroNif">Numero NIF</label>
+                        <input id="numeroNif" type="text" th:field="*{numeroNif}" data-field-key="employeur_madagascar.numero_nif" />
+                    </div>
+                    <div>
+                        <label for="numeroStat">Numero STAT</label>
+                        <input id="numeroStat" type="text" th:field="*{numeroStat}" data-field-key="employeur_madagascar.numero_stat" />
+                    </div>
+                    <div>
+                        <label for="secteurActivite">Secteur activite</label>
+                        <input id="secteurActivite" type="text" th:field="*{secteurActivite}" data-field-key="employeur_madagascar.secteur_activite" />
+                    </div>
+                    <div>
+                        <label for="adresseEmployeur">Adresse</label>
+                        <input id="adresseEmployeur" type="text" th:field="*{adresseEmployeur}" data-field-key="employeur_madagascar.adresse" />
+                    </div>
+                    <div>
+                        <label for="telephoneEmployeur">Telephone</label>
+                        <input id="telephoneEmployeur" type="text" th:field="*{telephoneEmployeur}" data-field-key="employeur_madagascar.telephone" />
+                    </div>
+                    <div>
+                        <label for="emailEmployeur">Email</label>
+                        <input id="emailEmployeur" type="email" th:field="*{emailEmployeur}" data-field-key="employeur_madagascar.email" />
+                    </div>
+                    <div>
+                        <label for="nomResponsable">Nom responsable</label>
+                        <input id="nomResponsable" type="text" th:field="*{nomResponsable}" data-field-key="employeur_madagascar.nom_responsable" />
+                    </div>
+                    <div>
+                        <label for="fonctionResponsable">Fonction responsable</label>
+                        <input id="fonctionResponsable" type="text" th:field="*{fonctionResponsable}" data-field-key="employeur_madagascar.fonction_responsable" />
+                    </div>
+                </div>
+
+                <h2 class="section-title">Travailleur - Contrat</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="posteOccupe">Poste occupe</label>
+                        <input id="posteOccupe" type="text" th:field="*{posteOccupe}" data-field-key="demande_travailleur.poste_occupe" />
+                    </div>
+                    <div>
+                        <label for="typeContrat">Type contrat</label>
+                        <input id="typeContrat" type="text" th:field="*{typeContrat}" data-field-key="demande_travailleur.type_contrat" />
+                    </div>
+                    <div>
+                        <label for="dureeContratMois">Duree contrat (mois)</label>
+                        <input id="dureeContratMois" type="number" th:field="*{dureeContratMois}" data-field-key="demande_travailleur.duree_contrat_mois" />
+                    </div>
+                    <div>
+                        <label for="salaireMensuel">Salaire mensuel</label>
+                        <input id="salaireMensuel" type="number" step="0.01" th:field="*{salaireMensuel}" data-field-key="demande_travailleur.salaire_mensuel" />
+                    </div>
+                    <div>
+                        <label for="deviseSalaire">Devise salaire</label>
+                        <input id="deviseSalaire" type="text" th:field="*{deviseSalaire}" data-field-key="demande_travailleur.devise_salaire" />
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Pieces justificatives</h2>
+            <div class="checkbox-grid">
+                <label class="checkbox-item" th:each="piece : ${pieces}">
+                    <input type="checkbox" name="piecesJustificatives" th:value="${piece.idPieceJustificative}" />
+                    <span th:text="${piece.pieceJustificative}"></span>
+                </label>
+            </div>
+
+            <div class="actions">
+                <button type="submit">Valider</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script th:inline="javascript">
+    window.obligatoiresByType = JSON.parse(/*[[${obligatoiresJson}]]*/ "{}");
+</script>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

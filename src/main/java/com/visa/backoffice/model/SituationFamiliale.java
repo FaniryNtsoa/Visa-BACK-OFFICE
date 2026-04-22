@@ -1,5 +1,6 @@
 package com.visa.backoffice.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +11,7 @@ public class SituationFamiliale {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idSituationFamiliale;
 
     private String situationFamiliale; // Célibataire, Marié(e), Divorcé(e), Veuf/Veuve

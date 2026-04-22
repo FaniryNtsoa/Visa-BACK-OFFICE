@@ -8,6 +8,7 @@ public class EmployeurMadagascar {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idEmployeur;
 
     @Column(name = "raison_sociale")

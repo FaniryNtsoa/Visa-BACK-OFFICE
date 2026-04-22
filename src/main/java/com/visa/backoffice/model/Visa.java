@@ -8,6 +8,7 @@ public class Visa {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long idVisa;
 
     @Column(name = "date_debut")
