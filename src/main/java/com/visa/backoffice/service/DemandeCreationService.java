@@ -248,7 +248,7 @@ public class DemandeCreationService {
         Demande demande = new Demande();
         demande.setDateDemande(new Date());
         demande.setIdDemandeur(demandeur.getIdDemandeur().intValue());
-
+        demande.setIdStatus(1);
         if (visaTransformableId != null) {
             demande.setIdVisaTransformable(visaTransformableId);
         }

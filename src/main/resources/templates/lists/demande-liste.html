@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des demandes</title>
+    <link rel="stylesheet" href="/css/forms.css">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 15px; border: 1px solid #eee; text-align: left; }
+        th { background-color: #2c3e50; color: white; font-weight: 600; }
+        tr:hover { background-color: #f9f9f9; }
+        .btn-edit { background: #3498db; color: white; padding: 6px 12px; text-decoration: none; border-radius: 4px; font-size: 0.9em; }
+        .btn-edit:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+<header><h1>Gestion des dossiers</h1></header>
+<main>
+    <div class="card">
+        <h2>Demandes de visa enregistrées</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date de dépôt</th>
+                    <th>ID Demandeur</th>
+                    <th>Type Visa</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="d : ${demandes}">
+                    <td th:text="${d.idDemande}"></td>
+                    <td th:text="${d.dateDemande != null ? #dates.format(d.dateDemande, 'dd/MM/yyyy') : 'N/A'}"></td>
+                    <td th:text="${d.idDemandeur}"></td>
+                    <td th:text="${d.idTypeVisa}"></td>
+                    <td>
+                        <a th:href="@{/demandes/modifier/{id}(id=${d.idDemande})}" class="btn-edit">Modifier</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>
