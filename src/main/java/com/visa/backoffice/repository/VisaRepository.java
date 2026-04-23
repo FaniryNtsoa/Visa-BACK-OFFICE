@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VisaRepository extends JpaRepository<Visa, Long> {
 	Optional<Visa> findFirstByNumeroVisa(String numeroVisa);
+	Optional<Visa> findFirstByDemande_IdDemande(Integer idDemande);
 }

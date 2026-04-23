@@ -65,8 +65,8 @@ public class FormulaireController {
     @PostMapping("/nouvelle")
     public String enregistrerNouvelleDemande(@ModelAttribute("form") NouvelleDemandeForm form, Model model) {
         try {
-            FormResult result = demandeCreationService.creerNouvelleDemande(form);
-            return confirmation(model, result);
+            demandeCreationService.creerNouvelleDemande(form);
+            return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateNouvelleDemandeModel(model);
@@ -83,8 +83,8 @@ public class FormulaireController {
     @PostMapping("/transfert")
     public String enregistrerTransfertVisa(@ModelAttribute("form") TransfertVisaForm form, Model model) {
         try {
-            FormResult result = demandeCreationService.creerTransfertVisa(form);
-            return confirmation(model, result);
+            demandeCreationService.creerTransfertVisa(form);
+            return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             return "forms/transfert-visa";
@@ -100,8 +100,8 @@ public class FormulaireController {
     @PostMapping("/duplicata")
     public String enregistrerDuplicata(@ModelAttribute("form") DuplicataForm form, Model model) {
         try {
-            FormResult result = demandeCreationService.creerDuplicata(form);
-            return confirmation(model, result);
+            demandeCreationService.creerDuplicata(form);
+            return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             return "forms/duplicata";
@@ -118,8 +118,8 @@ public class FormulaireController {
     @PostMapping("/transfert-sans-donnees")
     public String enregistrerTransfertSansDonnees(@ModelAttribute("form") NouvelleDemandeForm form, Model model) {
         try {
-            FormResult result = demandeCreationService.creerTransfertVisaSansDonnees(form);
-            return confirmation(model, result);
+            demandeCreationService.creerTransfertVisaSansDonnees(form);
+            return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateNouvelleDemandeModel(model);
@@ -137,8 +137,8 @@ public class FormulaireController {
     @PostMapping("/duplicata-sans-donnees")
     public String enregistrerDuplicataSansDonnees(@ModelAttribute("form") NouvelleDemandeForm form, Model model) {
         try {
-            FormResult result = demandeCreationService.creerDuplicataSansDonnees(form);
-            return confirmation(model, result);
+            demandeCreationService.creerDuplicataSansDonnees(form);
+            return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateNouvelleDemandeModel(model);

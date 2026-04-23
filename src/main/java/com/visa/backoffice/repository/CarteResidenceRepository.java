@@ -9,4 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CarteResidenceRepository extends JpaRepository<CarteResidence, Long> {
 	Optional<CarteResidence> findFirstByPasseportOrderByIdCarteResidenceDesc(Passeport passeport);
+	Optional<CarteResidence> findFirstByNumeroCarteOrderByIdCarteResidenceDesc(String numeroCarte);
 }

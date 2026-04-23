@@ -15,7 +15,9 @@ INSERT INTO status_demande (status) VALUES
 INSERT INTO type_demande (type_demande) VALUES 
 ('Nouvelle demande de titre'), 
 ('Transfert visa'), 
-('Duplicata');
+('Duplicata'), 
+('Transfert visa sans donnees anterieures'), 
+('Duplicata sans donnees anterieures');
 
 INSERT INTO situation_familiale (situation_familiale) VALUES 
 ('Célibataire'), ('Marié(e)'), ('Divorcé(e)'), ('Veuf/Veuve');

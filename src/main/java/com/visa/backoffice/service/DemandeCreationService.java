@@ -5,6 +5,7 @@ import com.visa.backoffice.repository.*;
 import com.visa.backoffice.web.form.DuplicataForm;
 import com.visa.backoffice.web.form.NouvelleDemandeForm;
 import com.visa.backoffice.web.form.TransfertVisaForm;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -20,6 +21,7 @@ public class DemandeCreationService {
     private final DemandeurRepository demandeurRepository;
     private final TypeVisaRepository typeVisaRepository;
     private final TypeDemandeRepository typeDemandeRepository;
+    private final StatusDemandeRepository statusDemandeRepository;
     private final SituationFamilialeRepository situationFamilialeRepository;
     private final NationaliteRepository nationaliteRepository;
     private final PasseportRepository passeportRepository;
@@ -38,6 +40,7 @@ public class DemandeCreationService {
             DemandeurRepository demandeurRepository,
             TypeVisaRepository typeVisaRepository,
             TypeDemandeRepository typeDemandeRepository,
+            StatusDemandeRepository statusDemandeRepository,
             SituationFamilialeRepository situationFamilialeRepository,
             NationaliteRepository nationaliteRepository,
             PasseportRepository passeportRepository,
@@ -54,6 +57,7 @@ public class DemandeCreationService {
         this.demandeurRepository = demandeurRepository;
         this.typeVisaRepository = typeVisaRepository;
         this.typeDemandeRepository = typeDemandeRepository;
+        this.statusDemandeRepository = statusDemandeRepository;
         this.situationFamilialeRepository = situationFamilialeRepository;
         this.nationaliteRepository = nationaliteRepository;
         this.passeportRepository = passeportRepository;
@@ -76,8 +80,15 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerTransfertVisa(TransfertVisaForm form) {
-        Visa visa = visaRepository.findFirstByNumeroVisa(form.getNumeroVisa())
-                .orElseThrow(() -> new IllegalArgumentException("Visa introuvable pour le numero fourni."));
+        if (!hasText(form.getNumeroVisa())) {
+            throw new IllegalArgumentException("Le numero de l'ancien visa est obligatoire.");
+        }
+        if (!hasText(form.getNumeroNouveauPasseport())) {
+            throw new IllegalArgumentException("Le numero du nouveau passeport est obligatoire.");
+        }
+
+        Visa visa = visaRepository.findFirstByNumeroVisa(form.getNumeroVisa().trim())
+                .orElseThrow(() -> new IllegalArgumentException("Visa introuvable pour le numero de visa fourni."));
 
         Passeport ancienPasseport = visa.getPasseport();
         if (ancienPasseport == null) {
@@ -87,13 +98,35 @@ public class DemandeCreationService {
         Passeport nouveauPasseport = copyPasseport(ancienPasseport, form.getNumeroNouveauPasseport());
         passeportRepository.save(nouveauPasseport);
 
+        Demande demandeOrigine = visa.getDemande();
+        if (demandeOrigine == null || demandeOrigine.getIdDemandeur() == null) {
+            throw new IllegalArgumentException("Demandeur introuvable pour ce visa.");
+        }
+        Demandeur demandeur = demandeurRepository.findById(demandeOrigine.getIdDemandeur().longValue())
+            .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable pour ce visa."));
+        demandeur.setIdPasseport(nouveauPasseport);
+        demandeurRepository.save(demandeur);
+
         Demande demande = createDemandeSimple(visa.getDemande(), "Transfert visa", null, null);
+        setTypeDemande(demande, "Transfert visa");
+        approuverDemande(demande);
+
         Visa nouveauVisa = copyVisa(visa, nouveauPasseport, demande);
         visaRepository.save(nouveauVisa);
 
-        Optional<CarteResidence> carteResidenceOpt = carteResidenceRepository
-                .findFirstByPasseportOrderByIdCarteResidenceDesc(ancienPasseport);
-        CarteResidence nouvelleCarte = copyCarteResidence(carteResidenceOpt.orElse(null), nouveauPasseport, demande, false);
+        Optional<CarteResidence> carteByNumero = Optional.empty();
+        if (hasText(visa.getNumeroVisa())) {
+            carteByNumero = carteResidenceRepository.findFirstByNumeroCarteOrderByIdCarteResidenceDesc(visa.getNumeroVisa());
+        }
+
+        CarteResidence carteSource = carteByNumero.orElseGet(() -> carteResidenceRepository
+            .findFirstByPasseportOrderByIdCarteResidenceDesc(ancienPasseport)
+            .orElse(null));
+        if (carteSource == null) {
+            throw new IllegalArgumentException("Carte residence introuvable pour ce visa.");
+        }
+
+        CarteResidence nouvelleCarte = copyCarteResidence(carteSource, nouveauPasseport, demande, false);
         carteResidenceRepository.save(nouvelleCarte);
 
         return new FormResult("Transfert visa enregistre.", List.of(demande.getIdDemande().longValue()));
@@ -101,6 +134,10 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerDuplicata(DuplicataForm form) {
+        if (!hasText(form.getNumeroPasseport())) {
+            throw new IllegalArgumentException("Le numero passeport est obligatoire.");
+        }
+
         Visa visa = visaRepository.findFirstByNumeroVisa(form.getNumeroVisa())
                 .orElseThrow(() -> new IllegalArgumentException("Visa introuvable pour le numero fourni."));
 
@@ -110,11 +147,19 @@ public class DemandeCreationService {
         }
 
         CarteResidence carteOrigine = carteResidenceRepository
-                .findFirstByPasseportOrderByIdCarteResidenceDesc(passeport)
-                .orElseThrow(() -> new IllegalArgumentException("Carte residence introuvable pour ce passeport."));
+                .findFirstByNumeroCarteOrderByIdCarteResidenceDesc(form.getNumeroVisa())
+                .orElseThrow(() -> new IllegalArgumentException("Carte residence introuvable pour ce numero visa."));
+
+        Passeport passeportCarte = carteOrigine.getPasseport();
+        if (passeportCarte == null || !form.getNumeroPasseport().equalsIgnoreCase(passeportCarte.getNumeroPasseport())) {
+            throw new IllegalArgumentException("Le numero passeport ne correspond pas a la carte residence de ce numero visa.");
+        }
 
         Demande demande = createDemandeSimple(visa.getDemande(), "Duplicata", null, null);
-        CarteResidence duplicata = copyCarteResidence(carteOrigine, passeport, demande, true);
+        setTypeDemande(demande, "Duplicata");
+        approuverDemande(demande);
+
+        CarteResidence duplicata = copyCarteResidence(carteOrigine, passeportCarte, demande, true);
         duplicata.setCarteResidenceDuplicata(carteOrigine);
         carteResidenceRepository.save(duplicata);
 
@@ -123,35 +168,41 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerTransfertVisaSansDonnees(NouvelleDemandeForm form) {
-        CreationContext base = createBaseDemande(form, "Nouvelle demande", true);
-        CreationContext transfert = createBaseDemande(form, "Transfert visa", false);
-
-        Passeport nouveauPasseport = copyPasseport(base.passeport, form.getNumeroPasseport());
-        passeportRepository.save(nouveauPasseport);
-
-        Visa nouveauVisa = copyVisa(base.visa, nouveauPasseport, transfert.demande);
-        visaRepository.save(nouveauVisa);
-
-        CarteResidence nouvelleCarte = copyCarteResidence(base.carteResidence, nouveauPasseport, transfert.demande, false);
-        carteResidenceRepository.save(nouvelleCarte);
+        CreationContext transfertSansDonnees =
+            createBaseDemande(form, "Transfert de visa sans donnees anterieur", false);
+        setTypeDemande(transfertSansDonnees.demande,
+            "Transfert de visa sans donnees anterieur",
+            "Transfert de visa sans données anterieur",
+            "Transfert de visa sans donnees anterieur",
+            "Transfert visa sans donnees anterieur",
+            "Transfert visa sans données anterieur");
+        approuverDemande(transfertSansDonnees.demande);
+        createVisaAndCarteForApprovedDemande(transfertSansDonnees);
 
         return new FormResult(
                 "Transfert visa sans donnees anterieur enregistre.",
-                List.of(base.demande.getIdDemande().longValue(), transfert.demande.getIdDemande().longValue()));
+            List.of(transfertSansDonnees.demande.getIdDemande().longValue()));
     }
 
     @Transactional
     public FormResult creerDuplicataSansDonnees(NouvelleDemandeForm form) {
-        CreationContext base = createBaseDemande(form, "Nouvelle demande", true);
-        CreationContext duplicata = createBaseDemande(form, "Duplicata", false);
+        CreationContext demandePrincipale =
+            createBaseDemande(form, "Duplicata sans donnees anterieur", false);
+        setTypeDemande(demandePrincipale.demande,
+            "Duplicata sans donnees anterieur",
+            "Duplicata sans données anterieur");
+        approuverDemande(demandePrincipale.demande);
+        createVisaAndCarteForApprovedDemande(demandePrincipale);
 
-        CarteResidence carteDuplicata = copyCarteResidence(base.carteResidence, base.passeport, duplicata.demande, true);
-        carteDuplicata.setCarteResidenceDuplicata(base.carteResidence);
+        Demande demandeDuplicata = createDemandeSimple(demandePrincipale.demande, "Duplicata", null, null);
+        CarteResidence carteDuplicata =
+            copyCarteResidence(demandePrincipale.carteResidence, demandePrincipale.passeport, demandeDuplicata, true);
+        carteDuplicata.setCarteResidenceDuplicata(demandePrincipale.carteResidence);
         carteResidenceRepository.save(carteDuplicata);
 
         return new FormResult(
                 "Duplicata sans donnees anterieur enregistre.",
-                List.of(base.demande.getIdDemande().longValue(), duplicata.demande.getIdDemande().longValue()));
+            List.of(demandePrincipale.demande.getIdDemande().longValue(), demandeDuplicata.getIdDemande().longValue()));
     }
 
     private CreationContext createBaseDemande(NouvelleDemandeForm form, String typeDemande, boolean createVisaCarte) {
@@ -442,6 +493,112 @@ public class DemandeCreationService {
         carteResidence.setDemande(demande);
         carteResidence.setIsDuplicata(false);
         return carteResidence;
+    }
+
+    private void createVisaAndCarteForApprovedDemande(CreationContext context) {
+        Visa visa = createVisaFromDemande(context.demande, context.passeport);
+        CarteResidence carteResidence = createCarteResidenceFromVisa(context.demande, context.passeport, visa);
+
+        String numeroUnique = "CR-" + context.demande.getIdDemande() + "-" + System.currentTimeMillis();
+        carteResidence.setNumeroCarte(numeroUnique);
+        visa.setNumeroVisa(numeroUnique);
+
+        visaRepository.save(visa);
+        carteResidenceRepository.save(carteResidence);
+
+        context.visa = visa;
+        context.carteResidence = carteResidence;
+    }
+
+    private void approuverDemande(Demande demande) {
+        Integer statusId = ensureStatusId(
+                "visa approuve",
+                "visa approuvé",
+                "visa approuvee",
+                "visa approuvée");
+        demande.setIdStatus(statusId);
+        demandeRepository.save(demande);
+    }
+
+    private void setTypeDemande(Demande demande, String... labels) {
+        Integer typeId = ensureTypeDemandeId(labels);
+        demande.setIdTypeDemande(typeId);
+        demandeRepository.save(demande);
+    }
+
+    private Integer ensureTypeDemandeId(String... labels) {
+        Integer existingId = findTypeDemandeId(labels);
+        if (existingId != null) {
+            return existingId;
+        }
+
+        TypeDemande typeDemande = new TypeDemande();
+        typeDemande.setTypeDemande(firstNonBlank(labels, "Type demande"));
+        return typeDemandeRepository.save(typeDemande).getIdTypeDemande();
+    }
+
+    private Integer findTypeDemandeId(String... labels) {
+        for (String label : labels) {
+            Optional<TypeDemande> exact = typeDemandeRepository.findFirstByTypeDemandeIgnoreCase(label);
+            if (exact.isPresent()) {
+                return exact.get().getIdTypeDemande();
+            }
+        }
+
+        List<TypeDemande> all = typeDemandeRepository.findAll();
+        for (String label : labels) {
+            String normalizedLabel = normalize(label);
+            for (TypeDemande typeDemande : all) {
+                if (normalize(typeDemande.getTypeDemande()).equals(normalizedLabel)) {
+                    return typeDemande.getIdTypeDemande();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Integer findStatusId(String... labels) {
+        List<StatusDemande> all = statusDemandeRepository.findAll();
+        for (String label : labels) {
+            String normalizedLabel = normalize(label);
+            for (StatusDemande status : all) {
+                if (normalize(status.getStatus()).equals(normalizedLabel)) {
+                    return status.getIdStatus();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Integer ensureStatusId(String... labels) {
+        Integer existingId = findStatusId(labels);
+        if (existingId != null) {
+            return existingId;
+        }
+
+        StatusDemande statusDemande = new StatusDemande();
+        statusDemande.setStatus(firstNonBlank(labels, "visa approuve"));
+        return statusDemandeRepository.save(statusDemande).getIdStatus();
+    }
+
+    private String firstNonBlank(String[] labels, String fallback) {
+        if (labels != null) {
+            for (String label : labels) {
+                if (label != null && !label.isBlank()) {
+                    return label;
+                }
+            }
+        }
+        return fallback;
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return normalized.trim().toLowerCase(Locale.ROOT);
     }
 
     private static class CreationContext {

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Details de la demande</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<header><h1>Details de la demande</h1></header>
+<main>
+    <div class="card">
+        <div class="details-grid">
+            <div class="details-item">
+                <h3>Demande</h3>
+                <p><strong>Numero :</strong> <span th:text="${demande.idDemande}"></span></p>
+                <p><strong>Date depot :</strong> <span th:text="${demande.dateDemande != null ? #dates.format(demande.dateDemande, 'dd/MM/yyyy') : 'N/A'}"></span></p>
+                <p><strong>Type visa :</strong> <span th:text="${typeVisa != null ? typeVisa.typeVisa : 'N/A'}"></span></p>
+                <p><strong>Numero visa transformable :</strong> <span th:text="${numVisaTransformable != null && numVisaTransformable.numVisaTransformable != null ? numVisaTransformable.numVisaTransformable : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item">
+                <h3>Demandeur</h3>
+                <p><strong>Nom :</strong> <span th:text="${demandeur.nom}"></span></p>
+                <p><strong>Prenom :</strong> <span th:text="${demandeur.prenom}"></span></p>
+                <p><strong>Date naissance :</strong> <span th:text="${demandeur.dateNaissance != null ? #dates.format(demandeur.dateNaissance, 'dd/MM/yyyy') : 'N/A'}"></span></p>
+                <p><strong>Lieu naissance :</strong> <span th:text="${demandeur.lieuNaissance != null ? demandeur.lieuNaissance : 'N/A'}"></span></p>
+                <p><strong>Genre :</strong> <span th:text="${demandeur.genre != null ? demandeur.genre : 'N/A'}"></span></p>
+                <p><strong>Adresse :</strong> <span th:text="${demandeur.adresseMada != null ? demandeur.adresseMada : 'N/A'}"></span></p>
+                <p><strong>Nationalite :</strong> <span th:text="${demandeur.idNationalite != null ? demandeur.idNationalite.nationalite : 'N/A'}"></span></p>
+                <p><strong>Situation familiale :</strong> <span th:text="${demandeur.idSituationFamiliale != null ? demandeur.idSituationFamiliale.situationFamiliale : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item">
+                <h3>Passeport</h3>
+                <p><strong>Numero :</strong> <span th:text="${passeport != null && passeport.numeroPasseport != null ? passeport.numeroPasseport : 'N/A'}"></span></p>
+                <p><strong>Delivrance :</strong> <span th:text="${passeport != null && passeport.dateDelivrance != null ? #dates.format(passeport.dateDelivrance, 'dd/MM/yyyy') : 'N/A'}"></span></p>
+                <p><strong>Expiration :</strong> <span th:text="${passeport != null && passeport.dateExpiration != null ? #dates.format(passeport.dateExpiration, 'dd/MM/yyyy') : 'N/A'}"></span></p>
+                <p><strong>Lieu delivrance :</strong> <span th:text="${passeport != null && passeport.lieuDelivrance != null ? passeport.lieuDelivrance : 'N/A'}"></span></p>
+                <p><strong>Pays delivrance :</strong> <span th:text="${passeport != null && passeport.paysDelivrance != null ? passeport.paysDelivrance : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item" th:if="${demandeInvestisseur != null || projetInvestissement != null}">
+                <h3>Investisseur</h3>
+                <p><strong>Nom projet :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.nomProjet != null ? projetInvestissement.nomProjet : 'N/A'}"></span></p>
+                <p><strong>Secteur :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.secteur != null ? projetInvestissement.secteur : 'N/A'}"></span></p>
+                <p><strong>Description :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.descriptionProjet != null ? projetInvestissement.descriptionProjet : 'N/A'}"></span></p>
+                <p><strong>Montant :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.montantInvestissement != null ? projetInvestissement.montantInvestissement : 'N/A'}"></span></p>
+                <p><strong>Devise :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.devise != null ? projetInvestissement.devise : 'N/A'}"></span></p>
+                <p><strong>Zone :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.zoneInvestissement != null ? projetInvestissement.zoneInvestissement : 'N/A'}"></span></p>
+                <p><strong>Emplois crees :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.nombreEmploisCrees != null ? projetInvestissement.nombreEmploisCrees : 'N/A'}"></span></p>
+                <p><strong>Duree projet (mois) :</strong> <span th:text="${projetInvestissement != null && projetInvestissement.dureeProjetMois != null ? projetInvestissement.dureeProjetMois : 'N/A'}"></span></p>
+                <p><strong>Forme juridique :</strong> <span th:text="${demandeInvestisseur != null && demandeInvestisseur.formeJuridique != null ? demandeInvestisseur.formeJuridique : 'N/A'}"></span></p>
+                <p><strong>Numero registre commerce :</strong> <span th:text="${demandeInvestisseur != null && demandeInvestisseur.numeroRegistreCommerce != null ? demandeInvestisseur.numeroRegistreCommerce : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item" th:if="${employeur != null}">
+                <h3>Travailleur - Employeur</h3>
+                <p><strong>Raison sociale :</strong> <span th:text="${employeur.raisonSociale != null ? employeur.raisonSociale : 'N/A'}"></span></p>
+                <p><strong>Numero NIF :</strong> <span th:text="${employeur.numeroNif != null ? employeur.numeroNif : 'N/A'}"></span></p>
+                <p><strong>Numero STAT :</strong> <span th:text="${employeur.numeroStat != null ? employeur.numeroStat : 'N/A'}"></span></p>
+                <p><strong>Secteur activite :</strong> <span th:text="${employeur.secteurActivite != null ? employeur.secteurActivite : 'N/A'}"></span></p>
+                <p><strong>Adresse :</strong> <span th:text="${employeur.adresse != null ? employeur.adresse : 'N/A'}"></span></p>
+                <p><strong>Telephone :</strong> <span th:text="${employeur.telephone != null ? employeur.telephone : 'N/A'}"></span></p>
+                <p><strong>Email :</strong> <span th:text="${employeur.email != null ? employeur.email : 'N/A'}"></span></p>
+                <p><strong>Nom responsable :</strong> <span th:text="${employeur.nomResponsable != null ? employeur.nomResponsable : 'N/A'}"></span></p>
+                <p><strong>Fonction responsable :</strong> <span th:text="${employeur.fonctionResponsable != null ? employeur.fonctionResponsable : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item" th:if="${demandeTravailleur != null}">
+                <h3>Travailleur - Contrat</h3>
+                <p><strong>Poste occupe :</strong> <span th:text="${demandeTravailleur.posteOccupe != null ? demandeTravailleur.posteOccupe : 'N/A'}"></span></p>
+                <p><strong>Type contrat :</strong> <span th:text="${demandeTravailleur.typeContrat != null ? demandeTravailleur.typeContrat : 'N/A'}"></span></p>
+                <p><strong>Duree contrat (mois) :</strong> <span th:text="${demandeTravailleur.dureeContratMois != null ? demandeTravailleur.dureeContratMois : 'N/A'}"></span></p>
+                <p><strong>Salaire mensuel :</strong> <span th:text="${demandeTravailleur.salaireMensuel != null ? demandeTravailleur.salaireMensuel : 'N/A'}"></span></p>
+                <p><strong>Devise salaire :</strong> <span th:text="${demandeTravailleur.deviseSalaire != null ? demandeTravailleur.deviseSalaire : 'N/A'}"></span></p>
+            </div>
+            <div class="details-item">
+                <h3>Pieces justificatives</h3>
+                <div th:if="${#lists.isEmpty(piecesJustificatives)}">Aucune piece.</div>
+                <ul th:if="${!#lists.isEmpty(piecesJustificatives)}">
+                    <li th:each="piece : ${piecesJustificatives}" th:text="${piece.pieceJustificative}"></li>
+                </ul>
+            </div>
+        </div>
+        <div class="actions">
+            <a th:href="@{/demandes/liste}" class="action-link mr-3">Retour liste</a>
+            <a th:href="@{/demandes/modifier/{id}(id=${demande.idDemande})}" class="btn-edit">Modifier</a>
+        </div>
+    </div>
+</main>
+</body>
+</html>
