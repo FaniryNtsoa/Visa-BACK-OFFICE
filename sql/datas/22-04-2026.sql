@@ -23,7 +23,30 @@ INSERT INTO situation_familiale (situation_familiale) VALUES
 ('Célibataire'), ('Marié(e)'), ('Divorcé(e)'), ('Veuf/Veuve');
 
 INSERT INTO nationalite (nationalite, code_pays) VALUES 
-('Française', 'FR'), ('Chinoise', 'CN'), ('Indienne', 'IN'), ('Italienne', 'IT');
+('Française', 'FR'), 
+('Chinoise', 'CN'), 
+('Indienne', 'IN'), 
+('Italienne', 'IT'),
+('Américaine', 'US'),
+('Allemande', 'DE'),
+('Espagnole', 'ES'),
+('Britannique', 'GB'),
+('Japonaise', 'JP'),
+('Brésilienne', 'BR'),
+('Canadienne', 'CA'),
+('Australienne', 'AU'),
+('Sud-Africaine', 'ZA'),
+('Mexicaine', 'MX'),
+('Russe', 'RU'),
+('Coréenne', 'KR'),
+('Marocaine', 'MA'),
+('Turque', 'TR'),
+('Néerlandaise', 'NL'),
+('Suédoise', 'SE'),
+('Suisse', 'CH'),
+('Belge', 'BE'),
+('Portugaise', 'PT'),
+('Vietnamienne', 'VN');
 
 INSERT INTO type_visa (type_visa, duree_validite_mois, description) VALUES 
 ('Travailleur', 24, 'Visa professionnel pour expatriés sous contrat'),
@@ -41,13 +64,21 @@ INSERT INTO piece_justificative (piece_justificative, description) VALUES
 -- Obligatoires pour Travailleur
 INSERT INTO obligatoire (id_type_visa, nom_table, nom_colonne_obligatoire) VALUES 
 (1, 'demandeur', 'nom'),
-(1, 'demandeur', 'prenom'),
+(1, 'demandeur', 'date_naissance'),
+(1, 'demandeur', 'adresse_mada'),
+(1, 'nationalite', 'nationalite'),
+(1, 'situation_familiale', 'situation_familiale'),
 (1, 'passeport', 'numero_passeport'),
 (1, 'demande_travailleur', 'salaire_mensuel');
 
 -- Obligatoires pour Investisseur
 INSERT INTO obligatoire (id_type_visa, nom_table, nom_colonne_obligatoire) VALUES 
 (2, 'demandeur', 'nom'),
+(2, 'demandeur', 'date_naissance'),
+(2, 'demandeur', 'adresse_mada'),
+(2, 'nationalite', 'nationalite'),
+(2, 'situation_familiale', 'situation_familiale'),
+(2, 'passeport', 'numero_passeport'),
 (2, 'projet_investissement', 'montant_investissement'),
 (2, 'demande_investisseur', 'numero_registre_commerce');
 
