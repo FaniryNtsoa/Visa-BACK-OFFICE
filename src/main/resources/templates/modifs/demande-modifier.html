@@ -2,6 +2,7 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Modifier la demande</title>
     <link rel="stylesheet" href="/css/forms.css">
 </head>
@@ -9,7 +10,7 @@
 <header><h1>Modification de la demande #<span th:text="${demandeId}"></span></h1></header>
 <main>
     <div class="card">
-        <form th:action="@{/demandes/modifier/{id}(id=${demandeId})}" th:object="${form}" method="post">
+        <form th:action="@{/demandes/modifier/{id}(id=${demandeId})}" th:object="${form}" method="post" class="modal-form" data-modal-title="Modifier la demande" data-modal-trigger="Ouvrir le formulaire de modification">
             
             <h2 class="section-title">Etat civil</h2>
             <div class="form-grid">
@@ -61,5 +62,6 @@
         });
     });
 </script>
+<script src="/js/visa-forms.js"></script>
 </body>
 </html>

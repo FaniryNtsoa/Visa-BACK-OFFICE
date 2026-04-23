@@ -13,7 +13,7 @@
 <main>
     <div class="card">
         <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
-        <form th:action="@{/demandes/transfert-sans-donnees}" th:object="${form}" method="post">
+        <form th:action="@{/demandes/transfert-sans-donnees}" th:object="${form}" method="post" class="modal-form" data-modal-title="Transfert sans donnees anterieures" data-modal-trigger="Ouvrir le formulaire de transfert sans donnees">
             <h2 class="section-title">Etat civil</h2>
             <div class="form-grid">
                 <div>

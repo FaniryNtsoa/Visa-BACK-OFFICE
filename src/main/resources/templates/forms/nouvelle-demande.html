@@ -13,7 +13,7 @@
 <main>
     <div class="card">
         <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
-        <form th:action="@{/demandes/nouvelle}" th:object="${form}" method="post">
+        <form th:action="@{/demandes/nouvelle}" th:object="${form}" method="post" class="modal-form" data-modal-title="Nouvelle demande de visa" data-modal-trigger="Creer une nouvelle demande">
             <h2 class="section-title">Etat civil</h2>
             <div class="form-grid">
                 <div>
