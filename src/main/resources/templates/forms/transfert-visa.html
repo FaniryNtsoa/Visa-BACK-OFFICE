@@ -13,7 +13,7 @@
 <main>
     <div class="card">
         <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
-        <form th:action="@{/demandes/transfert}" th:object="${form}" method="post">
+        <form th:action="@{/demandes/transfert}" th:object="${form}" method="post" class="modal-form" data-modal-title="Transfert de visa" data-modal-trigger="Ouvrir le formulaire de transfert">
             <h2 class="section-title">Informations</h2>
             <div class="form-grid">
                 <div>
@@ -31,5 +31,6 @@
         </form>
     </div>
 </main>
+<script src="/js/visa-forms.js"></script>
 </body>
 </html>
