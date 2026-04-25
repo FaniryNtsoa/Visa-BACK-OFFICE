@@ -1,18 +1,18 @@
 -- ==========================================================
--- SCRIPT DE DONNÉES DE TEST - SYSTÈME GESTION VISA
--- VERSION CORRIGÉE (IDs dynamiques via sous-requêtes)
+-- SCRIPT DE DONNeES DE TEST - SYSTÈME GESTION VISA
+-- VERSION CORRIGeE (IDs dynamiques via sous-requêtes)
 -- ==========================================================
 
 BEGIN;
 
 -- ==========================================================
--- 1. RÉFÉRENTIELS
+-- 1. ReFeRENTIELS
 -- ==========================================================
 
 INSERT INTO status_demande (status) VALUES 
-('Dossier créé'), 
-('Scan terminé'), 
-('Visa approuvé');
+('Dossier cree'), 
+('Scan termine'), 
+('Visa approuve');
 
 INSERT INTO type_demande (type_demande) VALUES 
 ('Nouvelle demande de titre'), 
@@ -22,49 +22,49 @@ INSERT INTO type_demande (type_demande) VALUES
 ('Duplicata sans donnees anterieures');
 
 INSERT INTO situation_familiale (situation_familiale) VALUES 
-('Célibataire'), ('Marié(e)'), ('Divorcé(e)'), ('Veuf/Veuve');
+('Celibataire'), ('Marie(e)'), ('Divorce(e)'), ('Veuf/Veuve');
 
 INSERT INTO nationalite (nationalite, code_pays) VALUES 
-('Française',      'FR'), 
+('Francaise',      'FR'), 
 ('Chinoise',       'CN'), 
 ('Indienne',       'IN'), 
 ('Italienne',      'IT'),
-('Américaine',     'US'),
+('Americaine',     'US'),
 ('Allemande',      'DE'),
 ('Espagnole',      'ES'),
 ('Britannique',    'GB'),
 ('Japonaise',      'JP'),
-('Brésilienne',    'BR'),
+('Bresilienne',    'BR'),
 ('Canadienne',     'CA'),
 ('Australienne',   'AU'),
 ('Sud-Africaine',  'ZA'),
 ('Mexicaine',      'MX'),
 ('Russe',          'RU'),
-('Coréenne',       'KR'),
+('Coreenne',       'KR'),
 ('Marocaine',      'MA'),
 ('Turque',         'TR'),
-('Néerlandaise',   'NL'),
-('Suédoise',       'SE'),
+('Neerlandaise',   'NL'),
+('Suedoise',       'SE'),
 ('Suisse',         'CH'),
 ('Belge',          'BE'),
 ('Portugaise',     'PT'),
 ('Vietnamienne',   'VN');
 
 INSERT INTO type_visa (type_visa, duree_validite_mois, description) VALUES 
-('Travailleur',  24, 'Visa professionnel pour expatriés sous contrat'),
-('Investisseur', 36, 'Visa pour opérateurs économiques et gérants');
+('Travailleur',  24, 'Visa professionnel pour expatries sous contrat'),
+('Investisseur', 36, 'Visa pour operateurs economiques et gerants');
 
 INSERT INTO piece_justificative (piece_justificative, description) VALUES 
-('Contrat de Travail',        'Contrat visé par l''EDBM ou Ministère'),
-('Statuts Société',           'Document juridique de l''entreprise'),
-('Certificat d''Hébergement', 'Preuve de logement à Madagascar'),
-('Copie Passeport',           'Scan de la page d''identité');
+('Contrat de Travail',        'Contrat vise par l''EDBM ou Ministère'),
+('Statuts Societe',           'Document juridique de l''entreprise'),
+('Certificat d''Hebergement', 'Preuve de logement à Madagascar'),
+('Copie Passeport',           'Scan de la page d''identite');
 
 
 -- ==========================================================
 -- 2. CONFIGURATION DES CHAMPS OBLIGATOIRES
---    Utilisation de sous-requêtes pour récupérer les IDs
---    réels, évitant toute erreur de clé étrangère.
+--    Utilisation de sous-requêtes pour recuperer les IDs
+--    reels, evitant toute erreur de cle etrangère.
 -- ==========================================================
 
 -- Obligatoires pour Visa Travailleur
@@ -103,7 +103,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 
 
 -- ==========================================================
--- 3. CAS N°1 : NOUVELLE DEMANDE TRAVAILLEUR — "Dossier créé"
+-- 3. CAS N°1 : NOUVELLE DEMANDE TRAVAILLEUR — "Dossier cre"
 -- ==========================================================
 
 -- INSERT INTO passeport (numero_passeport, date_delivrance, date_expiration, lieu_delivrance, pays_delivrance) 
@@ -112,7 +112,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 -- INSERT INTO demandeur (nom, prenom, date_naissance, genre, id_situation_familiale, id_nationalite, id_passeport)
 -- VALUES (
 --     'RAZAFY', 'Faniry', '1990-05-20', 'Masculin',
---     (SELECT id FROM situation_familiale WHERE situation_familiale = 'Célibataire'),
+--     (SELECT id FROM situation_familiale WHERE situation_familiale = 'Celibataire'),
 --     (SELECT id FROM nationalite          WHERE code_pays = 'FR'),
 --     (SELECT id FROM passeport            WHERE numero_passeport = 'FR-TEST-001')
 -- );
@@ -129,7 +129,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 --     '2026-04-22',
 --     (SELECT id FROM num_visa_transformable WHERE num_visa_transformable = 'TR-9988-MG'),
 --     (SELECT id FROM type_demande   WHERE type_demande = 'Nouvelle demande de titre'),
---     (SELECT id FROM status_demande WHERE status = 'Dossier créé'),
+--     (SELECT id FROM status_demande WHERE status = 'Dossier cre'),
 --     (SELECT id FROM demandeur      WHERE nom = 'RAZAFY' AND prenom = 'Faniry'),
 --     (SELECT id FROM type_visa      WHERE type_visa = 'Travailleur')
 -- );
@@ -144,14 +144,14 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 --      WHERE dm.nom = 'RAZAFY' AND d.date_demande = '2026-04-22'
 --      ORDER BY d.id DESC LIMIT 1),
 --     (SELECT id FROM employeur_madagascar WHERE numero_nif = '400123456'),
---     'Ingénieur Réseau',
+--     'Ingenieur Reseau',
 --     4500000,
 --     'MGA'
 -- );
 
 
 -- -- ==========================================================
--- -- 4. CAS N°2 : NOUVELLE DEMANDE INVESTISSEUR — "Scan terminé"
+-- -- 4. CAS N°2 : NOUVELLE DEMANDE INVESTISSEUR — "Scan termine"
 -- -- ==========================================================
 
 -- INSERT INTO passeport (numero_passeport, date_delivrance, date_expiration, lieu_delivrance, pays_delivrance) 
@@ -159,8 +159,8 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 
 -- INSERT INTO demandeur (nom, prenom, date_naissance, genre, id_situation_familiale, id_nationalite, id_passeport)
 -- VALUES (
---     'WANG', 'Li', '1982-11-30', 'Féminin',
---     (SELECT id FROM situation_familiale WHERE situation_familiale = 'Marié(e)'),
+--     'WANG', 'Li', '1982-11-30', 'Feminin',
+--     (SELECT id FROM situation_familiale WHERE situation_familiale = 'Marie(e)'),
 --     (SELECT id FROM nationalite          WHERE code_pays = 'CN'),
 --     (SELECT id FROM passeport            WHERE numero_passeport = 'CN-TEST-888')
 -- );
@@ -169,7 +169,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 -- VALUES (
 --     '2026-04-20',
 --     (SELECT id FROM type_demande   WHERE type_demande = 'Nouvelle demande de titre'),
---     (SELECT id FROM status_demande WHERE status = 'Scan terminé'),
+--     (SELECT id FROM status_demande WHERE status = 'Scan termine'),
 --     (SELECT id FROM demandeur      WHERE nom = 'WANG' AND prenom = 'Li'),
 --     (SELECT id FROM type_visa      WHERE type_visa = 'Investisseur')
 -- );
@@ -188,14 +188,14 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 --     'RCS-TANA-2026-B-001'
 -- );
 
--- -- Documents scannés
+-- -- Documents scannes
 -- INSERT INTO demande_piece_justificative (id_demande, id_piece_justificative, photo_piece_justificative, date_depot)
 -- VALUES 
 -- (
 --     (SELECT d.id FROM demande d
 --      JOIN demandeur dm ON dm.id = d.id_demandeur
 --      WHERE dm.nom = 'WANG' ORDER BY d.id DESC LIMIT 1),
---     (SELECT id FROM piece_justificative WHERE piece_justificative = 'Statuts Société'),
+--     (SELECT id FROM piece_justificative WHERE piece_justificative = 'Statuts Societe'),
 --     'path/to/statuts.pdf',
 --     '2026-04-21'
 -- ),
@@ -226,7 +226,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 -- VALUES (
 --     '2026-04-22',
 --     (SELECT id FROM type_demande   WHERE type_demande = 'Transfert visa'),
---     (SELECT id FROM status_demande WHERE status = 'Dossier créé'),
+--     (SELECT id FROM status_demande WHERE status = 'Dossier cre'),
 --     (SELECT id FROM demandeur      WHERE nom = 'RAZAFY' AND prenom = 'Faniry'),
 --     (SELECT id FROM type_visa      WHERE type_visa = 'Travailleur')
 -- );
@@ -236,7 +236,7 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 -- -- 6. CAS N°4 : DUPLICATA (PERTE CARTE) — Faniry
 -- -- ==========================================================
 
--- -- Carte d'origine (liée à l'ancien passeport FR-TEST-001)
+-- -- Carte d'origine (liee à l'ancien passeport FR-TEST-001)
 -- INSERT INTO carte_residence (numero_carte, date_debut, date_fin, is_duplicata, id_passeport)
 -- VALUES (
 --     'CR-776655',
@@ -251,12 +251,12 @@ SELECT id, 'demande_investisseur', 'numero_registre_commerce' FROM type_visa WHE
 -- VALUES (
 --     '2026-04-22',
 --     (SELECT id FROM type_demande   WHERE type_demande = 'Duplicata'),
---     (SELECT id FROM status_demande WHERE status = 'Dossier créé'),
+--     (SELECT id FROM status_demande WHERE status = 'Dossier cre'),
 --     (SELECT id FROM demandeur      WHERE nom = 'RAZAFY' AND prenom = 'Faniry'),
 --     (SELECT id FROM type_visa      WHERE type_visa = 'Travailleur')
 -- );
 
--- -- Carte duplicata (liée à la demande de duplicata)
+-- -- Carte duplicata (liee à la demande de duplicata)
 -- INSERT INTO carte_residence (numero_carte, date_debut, date_fin, is_duplicata, id_carte_residence_duplicata, id_passeport, id_demande)
 -- VALUES (
 --     'CR-776655',

@@ -20,6 +20,7 @@ public class NouvelleDemandeForm {
 
     // Passeport
     private String numeroPasseport;
+    private String numeroAncienPasseport;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private java.util.Date dateDelivrance;
@@ -136,6 +137,14 @@ public class NouvelleDemandeForm {
 
     public void setNumeroPasseport(String numeroPasseport) {
         this.numeroPasseport = numeroPasseport;
+    }
+
+    public String getNumeroAncienPasseport() {
+        return numeroAncienPasseport;
+    }
+
+    public void setNumeroAncienPasseport(String numeroAncienPasseport) {
+        this.numeroAncienPasseport = numeroAncienPasseport;
     }
 
     public java.util.Date getDateDelivrance() {

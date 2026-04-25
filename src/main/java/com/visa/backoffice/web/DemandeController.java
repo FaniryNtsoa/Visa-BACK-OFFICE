@@ -12,6 +12,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -49,6 +50,7 @@ public class DemandeController {
     private final ProjetInvestissementRepository projetInvestissementRepository;
     private final NumVisaTransformableRepository numVisaTransformableRepository;
     private final StatusDemandeRepository statusDemandeRepository;
+    private final DemandeStatusHistoryRepository demandeStatusHistoryRepository;
     private final Path uploadRoot = Paths.get("uploads", "demandes");
 
     public DemandeController(DemandeRepository demandeRepository, 
@@ -64,7 +66,8 @@ public class DemandeController {
                              DemandeInvestisseurRepository demandeInvestisseurRepository,
                              ProjetInvestissementRepository projetInvestissementRepository,
                              NumVisaTransformableRepository numVisaTransformableRepository,
-                             StatusDemandeRepository statusDemandeRepository) {
+                             StatusDemandeRepository statusDemandeRepository,
+                             DemandeStatusHistoryRepository demandeStatusHistoryRepository) {
         this.demandeRepository = demandeRepository;
         this.demandeurRepository = demandeurRepository;
         this.passeportRepository = passeportRepository;
@@ -79,6 +82,7 @@ public class DemandeController {
         this.projetInvestissementRepository = projetInvestissementRepository;
         this.numVisaTransformableRepository = numVisaTransformableRepository;
         this.statusDemandeRepository = statusDemandeRepository;
+        this.demandeStatusHistoryRepository = demandeStatusHistoryRepository;
     }
 
     @GetMapping("/liste")
@@ -97,12 +101,14 @@ public class DemandeController {
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         Map<Integer, Boolean> piecesCompletesByDemande = buildPiecesCompletesByDemande(demandes);
         Map<Integer, Boolean> scanTermineByDemande = buildScanTermineByDemande(demandes, statuts);
+        Map<Integer, Boolean> visaApprouveByDemande = buildVisaApprouveByDemande(demandes, statuts);
 
         model.addAttribute("demandes", demandes);
         model.addAttribute("demandeurs", demandeurs);
         model.addAttribute("typeVisas", typeVisas);
         model.addAttribute("piecesCompletesByDemande", piecesCompletesByDemande);
         model.addAttribute("scanTermineByDemande", scanTermineByDemande);
+        model.addAttribute("visaApprouveByDemande", visaApprouveByDemande);
         return "lists/demande-liste";
     }
 
@@ -111,11 +117,11 @@ public class DemandeController {
         Demande demande = demandeRepository.findById(id.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
 
-        List<DemandePieceJustificative> demandesPieces = demandePieceJustificativeRepository.findByIdDemande(id);
+        List<DemandePieceJustificative> demandesPieces = dedupePieces(demandePieceJustificativeRepository.findByIdDemande(id));
         Set<Long> pieceIds = demandesPieces.stream()
-                .map(DemandePieceJustificative::getIdPieceJustificative)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+            .map(DemandePieceJustificative::getIdPieceJustificative)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
         Map<Long, PieceJustificative> piecesById = pieceJustificativeRepository.findAllById(pieceIds)
                 .stream()
                 .collect(Collectors.toMap(PieceJustificative::getIdPieceJustificative, Function.identity()));
@@ -209,8 +215,7 @@ public class DemandeController {
         }
 
         Integer scanTermineId = ensureStatus("scan termine", "scan terminé");
-        demande.setIdStatus(scanTermineId);
-        demandeRepository.save(demande);
+        addStatusHistory(demande, scanTermineId);
         redirectAttributes.addFlashAttribute("successMessage", "Scan termine pour la demande #" + id + ".");
         return "redirect:/demandes/liste";
     }
@@ -360,9 +365,10 @@ public class DemandeController {
         // Ajout des nouvelles pièces justificatives uniquement
         if (pieces != null) {
             for (Long pieceId : pieces) {
-                boolean existeDeja = demandePieceJustificativeRepository.findAll().stream()
-                        .anyMatch(p -> p.getIdDemande().equals(id) && p.getIdPieceJustificative().equals(pieceId.intValue()));
-                
+                boolean existeDeja = demandePieceJustificativeRepository
+                        .findFirstByIdDemandeAndIdPieceJustificative(id, pieceId)
+                        .isPresent();
+
                 if (!existeDeja) {
                     DemandePieceJustificative dpj = new DemandePieceJustificative();
                     dpj.setIdDemande(id);
@@ -397,8 +403,17 @@ public class DemandeController {
     private Map<Integer, Boolean> buildScanTermineByDemande(List<Demande> demandes, Map<Integer, StatusDemande> statuts) {
         Map<Integer, Boolean> result = new HashMap<>();
         for (Demande demande : demandes) {
-            StatusDemande status = statuts.get(demande.getIdStatus());
+            StatusDemande status = getLatestStatusForDemande(demande, statuts);
             result.put(demande.getIdDemande(), isScanTermine(status));
+        }
+        return result;
+    }
+
+    private Map<Integer, Boolean> buildVisaApprouveByDemande(List<Demande> demandes, Map<Integer, StatusDemande> statuts) {
+        Map<Integer, Boolean> result = new HashMap<>();
+        for (Demande demande : demandes) {
+            StatusDemande status = getLatestStatusForDemande(demande, statuts);
+            result.put(demande.getIdDemande(), isVisaApprouve(status));
         }
         return result;
     }
@@ -407,7 +422,45 @@ public class DemandeController {
         if (pieces.isEmpty()) {
             return false;
         }
-        return pieces.stream().allMatch(p -> !parseUploadedFiles(p.getPhotoPieceJustificative()).isEmpty());
+        Map<Long, Boolean> byPiece = new HashMap<>();
+        for (DemandePieceJustificative piece : pieces) {
+            Long pieceId = piece.getIdPieceJustificative();
+            if (pieceId == null) {
+                continue;
+            }
+            boolean uploaded = !parseUploadedFiles(piece.getPhotoPieceJustificative()).isEmpty();
+            if (uploaded) {
+                byPiece.put(pieceId, true);
+            } else if (!byPiece.containsKey(pieceId)) {
+                byPiece.put(pieceId, false);
+            }
+        }
+        if (byPiece.isEmpty()) {
+            return false;
+        }
+        return byPiece.values().stream().allMatch(Boolean::booleanValue);
+    }
+
+    private List<DemandePieceJustificative> dedupePieces(List<DemandePieceJustificative> pieces) {
+        Map<Long, DemandePieceJustificative> unique = new LinkedHashMap<>();
+        for (DemandePieceJustificative piece : pieces) {
+            Long pieceId = piece.getIdPieceJustificative();
+            if (pieceId == null) {
+                continue;
+            }
+            DemandePieceJustificative existing = unique.get(pieceId);
+            if (existing == null || (!hasUploadedFiles(existing) && hasUploadedFiles(piece))) {
+                unique.put(pieceId, piece);
+            }
+        }
+        return new ArrayList<>(unique.values());
+    }
+
+    private boolean hasUploadedFiles(DemandePieceJustificative piece) {
+        if (piece == null) {
+            return false;
+        }
+        return !parseUploadedFiles(piece.getPhotoPieceJustificative()).isEmpty();
     }
 
     private List<String> parseUploadedFiles(String value) {
@@ -481,12 +534,34 @@ public class DemandeController {
     }
 
     private boolean isScanTermine(Demande demande) {
-        if (demande == null || demande.getIdStatus() == null) {
+        if (demande == null) {
             return false;
         }
-        return statusDemandeRepository.findById(demande.getIdStatus())
-                .map(this::isScanTermine)
-                .orElse(false);
+        StatusDemande status = getLatestStatusForDemande(demande, statusDemandeRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity())));
+        return isScanTermine(status);
+    }
+
+    private StatusDemande getLatestStatusForDemande(Demande demande, Map<Integer, StatusDemande> statuts) {
+        if (demande == null || demande.getIdDemande() == null) {
+            return null;
+        }
+        return demandeStatusHistoryRepository
+                .findFirstByIdDemandeOrderByDateChangementStatusDesc(demande.getIdDemande().longValue())
+                .map(history -> statuts.get(history.getIdStatus()))
+                .orElse(null);
+    }
+
+    private void addStatusHistory(Demande demande, Integer statusId) {
+        if (demande == null || demande.getIdDemande() == null || statusId == null) {
+            return;
+        }
+        DemandeStatusHistory history = new DemandeStatusHistory();
+        history.setIdDemande(demande.getIdDemande().longValue());
+        history.setIdStatus(statusId);
+        history.setDateChangementStatus(new Date());
+        demandeStatusHistoryRepository.save(history);
     }
 
     private boolean isScanTermine(StatusDemande status) {
@@ -495,6 +570,14 @@ public class DemandeController {
         }
         String normalized = normalize(status.getStatus());
         return normalized.equals("scan termine");
+    }
+
+    private boolean isVisaApprouve(StatusDemande status) {
+        if (status == null) {
+            return false;
+        }
+        String normalized = normalize(status.getStatus());
+        return normalized.equals("visa approuve") || normalized.equals("visa approuvee");
     }
 
     private String normalize(String value) {

@@ -21,9 +21,6 @@ public class Demande {
     @Column(name = "id_type_demande")
     private Integer idTypeDemande;
 
-    @Column(name = "id_status")
-    private Integer idStatus;
-
     @Column(name = "id_demandeur")
     private Integer idDemandeur;
 
@@ -62,14 +59,6 @@ public class Demande {
 
     public void setIdTypeDemande(Integer idTypeDemande) {
         this.idTypeDemande = idTypeDemande;
-    }
-
-    public Integer getIdStatus() {
-        return idStatus;
-    }
-
-    public void setIdStatus(Integer idStatus) {
-        this.idStatus = idStatus;
     }
 
     public Integer getIdDemandeur() {

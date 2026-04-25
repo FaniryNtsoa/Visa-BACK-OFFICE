@@ -34,6 +34,7 @@ public class DemandeCreationService {
     private final DemandeTravailleurRepository demandeTravailleurRepository;
     private final VisaRepository visaRepository;
     private final CarteResidenceRepository carteResidenceRepository;
+    private final DemandeStatusHistoryRepository demandeStatusHistoryRepository;
 
     public DemandeCreationService(
             DemandeRepository demandeRepository,
@@ -52,7 +53,8 @@ public class DemandeCreationService {
             EmployeurMadagascarRepository employeurMadagascarRepository,
             DemandeTravailleurRepository demandeTravailleurRepository,
             VisaRepository visaRepository,
-            CarteResidenceRepository carteResidenceRepository) {
+            CarteResidenceRepository carteResidenceRepository,
+            DemandeStatusHistoryRepository demandeStatusHistoryRepository) {
         this.demandeRepository = demandeRepository;
         this.demandeurRepository = demandeurRepository;
         this.typeVisaRepository = typeVisaRepository;
@@ -70,6 +72,7 @@ public class DemandeCreationService {
         this.demandeTravailleurRepository = demandeTravailleurRepository;
         this.visaRepository = visaRepository;
         this.carteResidenceRepository = carteResidenceRepository;
+        this.demandeStatusHistoryRepository = demandeStatusHistoryRepository;
     }
 
     @Transactional
@@ -168,20 +171,39 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerTransfertVisaSansDonnees(NouvelleDemandeForm form) {
-        CreationContext transfertSansDonnees =
-            createBaseDemande(form, "Transfert de visa sans donnees anterieur", false);
-        setTypeDemande(transfertSansDonnees.demande,
-            "Transfert de visa sans donnees anterieur",
-            "Transfert de visa sans données anterieur",
-            "Transfert de visa sans donnees anterieur",
-            "Transfert visa sans donnees anterieur",
-            "Transfert visa sans données anterieur");
-        approuverDemande(transfertSansDonnees.demande);
-        createVisaAndCarteForApprovedDemande(transfertSansDonnees);
+        if (!hasText(form.getNumeroAncienPasseport())) {
+            throw new IllegalArgumentException("Le numero de l'ancien passeport est obligatoire.");
+        }
+        if (!hasText(form.getNumeroPasseport())) {
+            throw new IllegalArgumentException("Le numero du nouveau passeport est obligatoire.");
+        }
+
+        CreationContext demandeAncienPasseport =
+            createBaseDemande(form, "Nouvelle demande de titre", false, form.getNumeroAncienPasseport());
+        setTypeDemande(demandeAncienPasseport.demande, "Nouvelle demande de titre");
+        approuverDemande(demandeAncienPasseport.demande);
+        createVisaAndCarteForApprovedDemande(demandeAncienPasseport);
+
+        CreationContext demandeTransfert =
+            createBaseDemande(form, "Transfert visa", false, form.getNumeroPasseport());
+        setTypeDemande(demandeTransfert.demande, "Transfert visa");
+        approuverDemande(demandeTransfert.demande);
+
+        Visa visaTransfere = copyVisa(demandeAncienPasseport.visa, demandeTransfert.passeport, demandeTransfert.demande);
+        visaRepository.save(visaTransfere);
+
+        CarteResidence carteTransferee = copyCarteResidence(
+            demandeAncienPasseport.carteResidence,
+            demandeTransfert.passeport,
+            demandeTransfert.demande,
+            false);
+        carteResidenceRepository.save(carteTransferee);
 
         return new FormResult(
                 "Transfert visa sans donnees anterieur enregistre.",
-            List.of(transfertSansDonnees.demande.getIdDemande().longValue()));
+            List.of(
+                demandeAncienPasseport.demande.getIdDemande().longValue(),
+                demandeTransfert.demande.getIdDemande().longValue()));
     }
 
     @Transactional
@@ -206,7 +228,15 @@ public class DemandeCreationService {
     }
 
     private CreationContext createBaseDemande(NouvelleDemandeForm form, String typeDemande, boolean createVisaCarte) {
-        Passeport passeport = buildPasseport(form);
+        return createBaseDemande(form, typeDemande, createVisaCarte, null);
+    }
+
+    private CreationContext createBaseDemande(
+            NouvelleDemandeForm form,
+            String typeDemande,
+            boolean createVisaCarte,
+            String numeroPasseportOverride) {
+        Passeport passeport = buildPasseport(form, numeroPasseportOverride);
         passeportRepository.save(passeport);
 
         Demandeur demandeur = buildDemandeur(form, passeport);
@@ -215,6 +245,7 @@ public class DemandeCreationService {
         Integer visaTransformableId = createVisaTransformableIfPresent(form, demandeur);
         Demande demande = buildDemande(form, demandeur, visaTransformableId, typeDemande);
         demandeRepository.save(demande);
+        addStatusHistory(demande, ensureStatusId("dossier cree", "dossier créé"));
 
         TypeVisa typeVisa = null;
         if (form.getTypeVisaId() != null) {
@@ -251,8 +282,12 @@ public class DemandeCreationService {
     }
 
     private Passeport buildPasseport(NouvelleDemandeForm form) {
+        return buildPasseport(form, null);
+    }
+
+    private Passeport buildPasseport(NouvelleDemandeForm form, String numeroPasseportOverride) {
         Passeport passeport = new Passeport();
-        passeport.setNumeroPasseport(form.getNumeroPasseport());
+        passeport.setNumeroPasseport(hasText(numeroPasseportOverride) ? numeroPasseportOverride : form.getNumeroPasseport());
         passeport.setDateDelivrance(form.getDateDelivrance());
         passeport.setDateExpiration(form.getDateExpiration());
         passeport.setLieuDelivrance(form.getLieuDelivrance());
@@ -299,7 +334,6 @@ public class DemandeCreationService {
         Demande demande = new Demande();
         demande.setDateDemande(new Date());
         demande.setIdDemandeur(demandeur.getIdDemandeur().intValue());
-        demande.setIdStatus(1);
         if (visaTransformableId != null) {
             demande.setIdVisaTransformable(visaTransformableId);
         }
@@ -337,7 +371,9 @@ public class DemandeCreationService {
                     .ifPresent(td -> demande.setIdTypeDemande(td.getIdTypeDemande()));
         }
 
-        return demandeRepository.save(demande);
+        Demande saved = demandeRepository.save(demande);
+        addStatusHistory(saved, ensureStatusId("dossier cree", "dossier créé"));
+        return saved;
     }
 
     private void createPiecesJustificativesIfPresent(NouvelleDemandeForm form, Demande demande) {
@@ -516,8 +552,18 @@ public class DemandeCreationService {
                 "visa approuvé",
                 "visa approuvee",
                 "visa approuvée");
-        demande.setIdStatus(statusId);
-        demandeRepository.save(demande);
+        addStatusHistory(demande, statusId);
+    }
+
+    private void addStatusHistory(Demande demande, Integer statusId) {
+        if (demande == null || demande.getIdDemande() == null || statusId == null) {
+            return;
+        }
+        DemandeStatusHistory history = new DemandeStatusHistory();
+        history.setIdDemande(demande.getIdDemande().longValue());
+        history.setIdStatus(statusId);
+        history.setDateChangementStatus(new Date());
+        demandeStatusHistoryRepository.save(history);
     }
 
     private void setTypeDemande(Demande demande, String... labels) {

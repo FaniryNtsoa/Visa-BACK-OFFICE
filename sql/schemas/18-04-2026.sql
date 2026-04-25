@@ -96,9 +96,15 @@ CREATE TABLE demande (
     date_demande DATE,
     id_visa_transformable INTEGER REFERENCES num_visa_transformable(id),
     id_type_demande INTEGER REFERENCES type_demande(id),
-    id_status INTEGER REFERENCES status_demande(id),
     id_demandeur INTEGER REFERENCES demandeur(id),
     id_type_visa INTEGER REFERENCES type_visa(id)
+);
+
+CREATE TABLE demande_status_history (
+    id SERIAL PRIMARY KEY,
+    id_demande INTEGER REFERENCES demande(id),
+    id_status INTEGER REFERENCES status_demande(id),
+    date_changement_status DATE
 );
 
 -- Demande Travailleur (Lien demande <-> employeur)

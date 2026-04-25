@@ -63,7 +63,11 @@
             <h2 class="section-title">Passeport</h2>
             <div class="form-grid">
                 <div>
-                    <label for="numeroPasseport">Numero passeport</label>
+                    <label for="numeroAncienPasseport">Numero ancien passeport</label>
+                    <input id="numeroAncienPasseport" type="text" th:field="*{numeroAncienPasseport}" data-field-key="passeport.numero_passeport_ancien" />
+                </div>
+                <div>
+                    <label for="numeroPasseport">Numero nouveau passeport</label>
                     <input id="numeroPasseport" type="text" th:field="*{numeroPasseport}" data-field-key="passeport.numero_passeport" />
                 </div>
                 <div>

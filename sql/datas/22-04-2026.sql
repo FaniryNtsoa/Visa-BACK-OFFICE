@@ -7,10 +7,19 @@ BEGIN;
 -- 1. RÉFÉRENTIELS (Données de base pour les listes déroulantes)
 -- ----------------------------------------------------------
 
-INSERT INTO status_demande (status) VALUES 
-('Dossier créé'), 
-('Scan terminé'), 
-('Visa approuvé');
+INSERT INTO status_demande (status)
+SELECT v.status
+FROM (VALUES
+	('Dossier créé'),
+	('Scan terminé'),
+	('Visa approuvé')
+) AS v(status)
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM status_demande sd
+	WHERE translate(lower(sd.status), 'éèêëàâäîïôöùûüç', 'eeeeaaaiioouuuc')
+		= translate(lower(v.status), 'éèêëàâäîïôöùûüç', 'eeeeaaaiioouuuc')
+);
 
 INSERT INTO type_demande (type_demande) VALUES 
 ('Nouvelle demande de titre'), 
