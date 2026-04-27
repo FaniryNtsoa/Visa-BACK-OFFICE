@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Confirmation</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>Confirmation</h1>
+</header>
+<main>
+    <div class="card">
+        <div class="notice success" th:text="${message}"></div>
+        <div th:if="${demandeIds}">
+            <p>Demandes creees :</p>
+            <ul>
+                <li th:each="id : ${demandeIds}" th:text="${id}"></li>
+            </ul>
+        </div>
+        <div class="actions actions-end">
+            <a href="/" class="btn-edit">Retour accueil</a>
+        </div>
+    </div>
+</main>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

@@ -2,9 +2,9 @@ spring:
   application:
     name: back-office
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/backoffice_db}
-    username: ${SPRING_DATASOURCE_USERNAME:backoffice_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:backoffice_pwd}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/visa_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
   jpa:
     hibernate:
       ddl-auto: update

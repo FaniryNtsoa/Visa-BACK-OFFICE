@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Modifier la demande</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<header><h1>Modification de la demande #<span th:text="${demandeId}"></span></h1></header>
+<main>
+    <div class="card">
+        <form th:action="@{/demandes/modifier/{id}(id=${demandeId})}" th:object="${form}" method="post" class="modal-form" data-modal-title="Modifier la demande" data-modal-trigger="Ouvrir le formulaire de modification">
+            
+            <h2 class="section-title">Etat civil</h2>
+            <div class="form-grid">
+                <div><label>Nom</label><input type="text" th:field="*{nom}" /></div>
+                <div><label>Prénom</label><input type="text" th:field="*{prenom}" /></div>
+                <div><label>Date naissance</label><input type="date" th:field="*{dateNaissance}" /></div>
+                <div><label>Lieu naissance</label><input type="text" th:field="*{lieuNaissance}" /></div>
+                <div><label>Genre</label><input type="text" th:field="*{genre}" /></div>
+                <div><label>Adresse Mada</label><input type="text" th:field="*{adresseMada}" /></div>
+            </div>
+
+            <h2 class="section-title">Passeport</h2>
+            <div class="form-grid">
+                <div><label>Numéro</label><input type="text" th:field="*{numeroPasseport}" /></div>
+                <div><label>Délivrance</label><input type="date" th:field="*{dateDelivrance}" /></div>
+                <div><label>Expiration</label><input type="date" th:field="*{dateExpiration}" /></div>
+                <div><label>Lieu</label><input type="text" th:field="*{lieuDelivrance}" /></div>
+                <div><label>Pays</label><input type="text" th:field="*{paysDelivrance}" /></div>
+            </div>
+
+            <h2 class="section-title">Pièces justificatives</h2>
+            <div class="checkbox-grid">
+                <label class="checkbox-item" th:each="piece : ${pieces}">
+                    <input type="checkbox" 
+                        name="piecesJustificatives" 
+                        th:value="${piece.idPieceJustificative}" 
+                        th:checked="${#lists.contains(checkedPieces, piece.idPieceJustificative)}" />
+                    <span th:text="${piece.pieceJustificative}"></span>
+                </label>
+            </div>
+
+            <div class="actions">
+                <a th:href="@{/demandes/liste}" class="action-link mr-3">Annuler</a>
+                <button type="submit">Enregistrer les modifications</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    // Empêcher de décocher les cases déjà présentes en base
+    document.querySelectorAll('.already-checked').forEach(cb => {
+        cb.addEventListener('click', (e) => {
+            if (!cb.checked) {
+                e.preventDefault();
+                cb.checked = true;
+                alert("Cette pièce a déjà été validée et ne peut plus être retirée.");
+            }
+        });
+    });
+</script>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

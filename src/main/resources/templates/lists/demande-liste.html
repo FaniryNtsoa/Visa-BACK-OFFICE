@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Liste des demandes</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<header><h1>Gestion des dossiers</h1></header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="notice success" th:text="${successMessage}"></div>
+        <h2>Demandes de visa enregistrées</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date de dépôt</th>
+                    <th>Demandeur</th>
+                    <th>Type Visa</th>
+                    <th>Etat Scan</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="d : ${demandes}">
+                    <td th:text="${d.dateDemande != null ? #dates.format(d.dateDemande, 'dd/MM/yyyy') : 'N/A'}"></td>
+                    <td th:text="${demandeurs[d.idDemandeur] != null ? demandeurs[d.idDemandeur].nom + ' ' + demandeurs[d.idDemandeur].prenom : 'N/A'}"></td>
+                    <td th:text="${typeVisas[d.idTypeVisa] != null ? typeVisas[d.idTypeVisa].typeVisa : 'N/A'}"></td>
+                    <td th:text="${visaApprouveByDemande[d.idDemande] ? 'Pieces complet' : (scanTermineByDemande[d.idDemande] ? 'Scan termine' : (piecesCompletesByDemande[d.idDemande] ? 'Pret pour scan' : 'Pieces manquantes'))}"></td>
+                    <td>
+                        <a th:if="${!visaApprouveByDemande[d.idDemande] && !scanTermineByDemande[d.idDemande]}" th:href="@{/demandes/modifier/{id}(id=${d.idDemande})}" class="btn-edit">Modifier</a>
+                        <a th:href="@{/demandes/details/{id}(id=${d.idDemande})}" class="btn-details">Details</a>
+                        <a th:if="${!visaApprouveByDemande[d.idDemande]}" th:href="@{/demandes/{id}/uploader(id=${d.idDemande})}" class="btn-upload">Uploader</a>
+                        <form th:if="${!visaApprouveByDemande[d.idDemande]}" th:action="@{/demandes/{id}/scan-terminer(id=${d.idDemande})}" method="post" class="inline-form">
+                            <button type="submit" class="btn-scan" th:disabled="${!piecesCompletesByDemande[d.idDemande] || scanTermineByDemande[d.idDemande]}">Scan terminer</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transfert visa</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>Transfert visa</h1>
+</header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <form th:action="@{/demandes/transfert}" th:object="${form}" method="post" class="modal-form" data-modal-title="Transfert de visa" data-modal-trigger="Ouvrir le formulaire de transfert">
+            <h2 class="section-title">Informations</h2>
+            <div class="form-grid">
+                <div>
+                    <label for="numeroVisa">Numero visa</label>
+                    <input id="numeroVisa" type="text" th:field="*{numeroVisa}" placeholder="Numero de l'ancien visa" />
+                </div>
+                <div>
+                    <label for="numeroNouveauPasseport">Numero du nouveau passeport</label>
+                    <input id="numeroNouveauPasseport" type="text" th:field="*{numeroNouveauPasseport}" />
+                </div>
+            </div>
+            <div class="actions">
+                <button type="submit">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</main>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

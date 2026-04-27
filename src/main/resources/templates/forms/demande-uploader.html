@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Uploader pieces justificatives</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>Uploader pieces - Demande <span th:text="${demande.idDemande}"></span></h1>
+</header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="notice success" th:text="${successMessage}"></div>
+
+        <p>Vous pouvez uploader plusieurs fichiers par piece (ex: contrat page 1, 2, 3).</p>
+        <p>Un nouvel upload remplace les fichiers deja uploades pour la piece.</p>
+
+        <div th:if="${#lists.isEmpty(demandesPieces)}" class="notice error">
+            Aucune piece justificative n'est liee a cette demande.
+        </div>
+
+        <div th:each="dpj : ${demandesPieces}" class="piece-block">
+            <p class="piece-title" th:text="${piecesById[dpj.idPieceJustificative] != null ? piecesById[dpj.idPieceJustificative].pieceJustificative : 'Piece #' + dpj.idPieceJustificative}"></p>
+
+            <form th:action="@{/demandes/{id}/pieces/{pieceId}/upload(id=${demande.idDemande},pieceId=${dpj.idPieceJustificative})}" method="post" enctype="multipart/form-data">
+                <input type="file" name="files" multiple />
+                <div class="actions mt-3">
+                    <button type="submit">Uploader / Remplacer</button>
+                </div>
+            </form>
+
+            <div class="mt-2">
+                <strong>Fichiers actuels:</strong>
+                <div class="preview-grid" th:if="${fichiersParPiece[dpj.idPieceJustificative] != null && !#lists.isEmpty(fichiersParPiece[dpj.idPieceJustificative])}">
+                    <div class="preview-item" th:each="f : ${fichiersParPiece[dpj.idPieceJustificative]}">
+                        <img th:if="${f.image}" th:src="${f.url}" th:alt="${f.name}" />
+                        <a th:href="${f.url}" target="_blank" th:text="${f.name}"></a>
+                    </div>
+                </div>
+                <p th:if="${fichiersParPiece[dpj.idPieceJustificative] == null || #lists.isEmpty(fichiersParPiece[dpj.idPieceJustificative])}">Aucun fichier.</p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a th:href="@{/demandes/liste}" class="action-link mr-3">Retour liste</a>
+            <span th:if="${allPiecesUploaded}" class="notice success notice-inline">Toutes les pieces sont uploades. Vous pouvez scanner terminer depuis la liste.</span>
+        </div>
+    </div>
+</main>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>
