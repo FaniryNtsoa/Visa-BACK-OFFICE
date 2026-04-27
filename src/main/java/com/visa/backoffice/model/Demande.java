@@ -27,6 +27,9 @@ public class Demande {
     @Column(name = "id_type_visa")
     private Integer idTypeVisa;
 
+    @Column(name = "numero_demande", insertable = false, updatable = false)
+    private String numeroDemande;
+
     // Getters and Setters
 
     public Integer getIdDemande() {
@@ -75,5 +78,13 @@ public class Demande {
 
     public void setIdTypeVisa(Integer idTypeVisa) {
         this.idTypeVisa = idTypeVisa;
+    }
+
+    public String getNumeroDemande() {
+        return numeroDemande;
+    }
+
+    public void setNumeroDemande(String numeroDemande) {
+        this.numeroDemande = numeroDemande;
     }
 }

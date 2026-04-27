@@ -93,6 +93,7 @@ CREATE TABLE num_visa_transformable (
 -- Demande
 CREATE TABLE demande (
     id SERIAL PRIMARY KEY,
+    numero_demande VARCHAR(50) GENERATED ALWAYS AS ('DMD-' || id) STORED UNIQUE,
     date_demande DATE,
     id_visa_transformable INTEGER REFERENCES num_visa_transformable(id),
     id_type_demande INTEGER REFERENCES type_demande(id),

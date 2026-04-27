@@ -1,0 +1,21 @@
+<section class="page-hero">
+  <div class="hero-card">
+    <p class="eyebrow">Recherche demande</p>
+    <h1>Suivi rapide par numero</h1>
+    <p class="hero-subtitle">
+      Entrez un numero de passeport ou un numero de demande pour afficher les demandes liees.
+    </p>
+    <div class="search-bar">
+      <input
+        [(ngModel)]="numeroRecherche"
+        placeholder="Ex: P1234567 ou DEM-2026-001"
+        (keyup.enter)="rechercher()"
+      >
+      <button type="button" (click)="rechercher()">Rechercher</button>
+    </div>
+    <p class="form-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <div class="hero-footer">
+      <span>Le systeme detecte automatiquement le type du numero.</span>
+    </div>
+  </div>
+</section>

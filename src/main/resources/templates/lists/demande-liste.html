@@ -32,6 +32,7 @@
                     <td>
                         <a th:if="${!visaApprouveByDemande[d.idDemande] && !scanTermineByDemande[d.idDemande]}" th:href="@{/demandes/modifier/{id}(id=${d.idDemande})}" class="btn-edit">Modifier</a>
                         <a th:href="@{/demandes/details/{id}(id=${d.idDemande})}" class="btn-details">Details</a>
+                        <a th:href="@{/demandes/qr/{id}(id=${d.idDemande})}" class="btn-qr">QR code</a>
                         <a th:if="${!visaApprouveByDemande[d.idDemande]}" th:href="@{/demandes/{id}/uploader(id=${d.idDemande})}" class="btn-upload">Uploader</a>
                         <form th:if="${!visaApprouveByDemande[d.idDemande]}" th:action="@{/demandes/{id}/scan-terminer(id=${d.idDemande})}" method="post" class="inline-form">
                             <button type="submit" class="btn-scan" th:disabled="${!piecesCompletesByDemande[d.idDemande] || scanTermineByDemande[d.idDemande]}">Scan terminer</button>

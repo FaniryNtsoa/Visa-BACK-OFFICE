@@ -1,0 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+:root {
+	--ink-900: #10131f;
+	--ink-700: #2f3548;
+	--ink-500: #57607a;
+	--sand-100: #f6f3ee;
+	--sand-200: #efe9df;
+	--teal-500: #1b8f88;
+	--teal-700: #0f6a65;
+	--coral-500: #f26b5b;
+	--surface: #ffffff;
+	--shadow: 0 20px 40px rgba(16, 19, 31, 0.12);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+	color: var(--ink-900);
+	background: radial-gradient(circle at top left, #e8f1f0 0%, #f4efe9 40%, #f7f1ec 100%);
+	min-height: 100vh;
+}
+
+.app-shell {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.app-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 1.5rem 2.5rem;
+}
+
+.brand {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--ink-900);
+	text-decoration: none;
+}
+
+.app-main {
+	flex: 1;
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+	padding: 0 1.5rem 3rem;
+}
+
+.page-hero {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.hero-card {
+	max-width: 720px;
+	width: 100%;
+	background: var(--surface);
+	border-radius: 28px;
+	padding: 2.75rem;
+	box-shadow: var(--shadow);
+	border: 1px solid rgba(16, 19, 31, 0.08);
+}
+
+h1, h2, h3 {
+	font-family: 'Space Grotesk', sans-serif;
+	margin: 0 0 0.75rem;
+}
+
+.hero-subtitle {
+	color: var(--ink-500);
+	font-size: 1rem;
+	margin-bottom: 1.75rem;
+}
+
+.eyebrow {
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	font-size: 0.75rem;
+	color: var(--teal-700);
+	margin-bottom: 0.5rem;
+	font-weight: 600;
+}
+
+.search-bar {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 0.75rem;
+	margin-bottom: 0.75rem;
+}
+
+input {
+	padding: 0.85rem 1rem;
+	border-radius: 12px;
+	border: 1px solid rgba(16, 19, 31, 0.15);
+	font-size: 1rem;
+}
+
+button {
+	padding: 0.85rem 1.4rem;
+	border-radius: 12px;
+	border: none;
+	background: var(--teal-500);
+	color: #fff;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+button:hover {
+	background: var(--teal-700);
+}
+
+.hero-footer {
+	margin-top: 1.5rem;
+	color: var(--ink-500);
+}
+
+.page-section {
+	width: min(100%, 1100px);
+}
+
+.section-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.5rem;
+}
+
+.panel {
+	background: var(--surface);
+	border-radius: 20px;
+	padding: 1.5rem;
+	border: 1px solid rgba(16, 19, 31, 0.08);
+	box-shadow: var(--shadow);
+	margin-bottom: 1.5rem;
+}
+
+.search-panel {
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	gap: 0.75rem;
+	align-items: center;
+}
+
+.hint {
+	color: var(--ink-500);
+	font-size: 0.9rem;
+}
+
+.form-error {
+	color: var(--coral-500);
+	font-weight: 600;
+}
+
+.data-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+	text-align: left;
+	padding: 0.75rem 0.5rem;
+	border-bottom: 1px solid rgba(16, 19, 31, 0.08);
+}
+
+.actions {
+	display: flex;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.primary-link {
+	color: var(--teal-700);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.ghost-link {
+	color: var(--ink-500);
+	text-decoration: none;
+}
+
+.grid-two {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 1.5rem;
+}
+
+.info-row {
+	display: flex;
+	justify-content: space-between;
+	padding: 0.35rem 0;
+	color: var(--ink-700);
+}
+
+.timeline {
+	display: grid;
+	gap: 1rem;
+}
+
+.timeline-item {
+	padding: 0.85rem 1rem;
+	background: var(--sand-100);
+	border-radius: 12px;
+}
+
+.timeline-date {
+	font-size: 0.85rem;
+	color: var(--ink-500);
+}
+
+.timeline-title {
+	font-weight: 600;
+}
+
+.qr-panel {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.qr-text {
+	white-space: pre-wrap;
+	font-family: 'Source Sans 3', sans-serif;
+	color: var(--ink-700);
+}
+
+@media (max-width: 720px) {
+	.app-header {
+		padding: 1.25rem 1.5rem;
+	}
+
+	.hero-card {
+		padding: 2rem;
+	}
+
+	.search-panel {
+		grid-template-columns: 1fr;
+	}
+}

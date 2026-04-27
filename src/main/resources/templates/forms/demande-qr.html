@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR Code Demande</title>
+    <link rel="stylesheet" href="/css/forms.css" />
+</head>
+<body>
+<header>
+    <h1>QR code de la demande</h1>
+</header>
+<main>
+    <div class="card">
+        <div class="notice success">
+            Votre demande a bien ete creee. Scannez le QR code pour ouvrir le suivi.
+        </div>
+
+        <div class="details-grid">
+            <div class="details-item" style="text-align:center;">
+                <h3 th:text="'Demande #' + ${demandeId}"></h3>
+                <img th:src="${qrImageUrl}" alt="QR code de suivi" style="max-width: 260px; width: 100%; height: auto;" />
+                <p style="word-break: break-all; margin-top: 12px;" th:text="${frontendQrUrl}"></p>
+            </div>
+            <div class="details-item">
+                <h3>Etape suivante</h3>
+                <p>
+                    Cette page redirige automatiquement vers la liste des demandes dans <strong id="countdown">8</strong> secondes.
+                </p>
+                <p>
+                    Depuis un mobile, le QR fonctionne si l'URL frontend est accessible depuis le telephone.
+                </p>
+                <p>
+                    Configurez APP_FRONTEND_BASE_URL (ex: http://192.168.1.10:4200) si besoin.
+                </p>
+                <div class="actions">
+                    <a th:href="${frontendQrUrl}" class="btn-qr" target="_blank" rel="noopener">Ouvrir la page QR</a>
+                    <a th:href="${retourListeUrl}" class="btn-details">Aller a la liste</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+(function () {
+  var seconds = 8;
+  var countdownEl = document.getElementById('countdown');
+  var target = '[[${retourListeUrl}]]';
+  var timer = setInterval(function () {
+    seconds -= 1;
+    if (countdownEl) {
+      countdownEl.textContent = String(seconds);
+    }
+    if (seconds <= 0) {
+      clearInterval(timer);
+      window.location.href = target;
+    }
+  }, 1000);
+})();
+</script>
+<script src="/js/visa-forms.js"></script>
+</body>
+</html>

@@ -14,15 +14,20 @@ import com.visa.backoffice.service.FormResult;
 import com.visa.backoffice.web.form.DuplicataForm;
 import com.visa.backoffice.web.form.NouvelleDemandeForm;
 import com.visa.backoffice.web.form.TransfertVisaForm;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -37,6 +42,7 @@ public class FormulaireController {
     private final NationaliteRepository nationaliteRepository;
     private final ObligatoireRepository obligatoireRepository;
     private final ObjectMapper objectMapper;
+    private final String frontendBaseUrl;
 
     public FormulaireController(
             DemandeCreationService demandeCreationService,
@@ -45,7 +51,8 @@ public class FormulaireController {
             SituationFamilialeRepository situationFamilialeRepository,
             NationaliteRepository nationaliteRepository,
             ObligatoireRepository obligatoireRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            @Value("${app.frontend-base-url:http://localhost:4200}") String frontendBaseUrl) {
         this.demandeCreationService = demandeCreationService;
         this.typeVisaRepository = typeVisaRepository;
         this.pieceJustificativeRepository = pieceJustificativeRepository;
@@ -53,6 +60,7 @@ public class FormulaireController {
         this.nationaliteRepository = nationaliteRepository;
         this.obligatoireRepository = obligatoireRepository;
         this.objectMapper = objectMapper;
+        this.frontendBaseUrl = frontendBaseUrl;
     }
 
     @GetMapping("/nouvelle")
@@ -65,13 +73,30 @@ public class FormulaireController {
     @PostMapping("/nouvelle")
     public String enregistrerNouvelleDemande(@ModelAttribute("form") NouvelleDemandeForm form, Model model) {
         try {
-            demandeCreationService.creerNouvelleDemande(form);
+            FormResult result = demandeCreationService.creerNouvelleDemande(form);
+            List<Long> createdIds = result.getDemandeIds();
+            if (createdIds != null && !createdIds.isEmpty()) {
+                return "redirect:/demandes/qr/" + createdIds.get(0);
+            }
             return "redirect:/demandes/liste";
         } catch (IllegalArgumentException ex) {
             model.addAttribute("errorMessage", ex.getMessage());
             populateNouvelleDemandeModel(model);
             return "forms/nouvelle-demande";
         }
+    }
+
+    @GetMapping("/qr/{id}")
+    public String afficherQrDemande(@PathVariable("id") Long id, Model model, HttpServletRequest request) {
+        String frontendQrUrl = buildFrontendQrUrl(id);
+        String qrImageUrl = "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="
+                + URLEncoder.encode(frontendQrUrl, StandardCharsets.UTF_8);
+
+        model.addAttribute("demandeId", id);
+        model.addAttribute("frontendQrUrl", frontendQrUrl);
+        model.addAttribute("qrImageUrl", qrImageUrl);
+        model.addAttribute("retourListeUrl", request.getContextPath() + "/demandes/liste");
+        return "forms/demande-qr";
     }
 
     @GetMapping("/transfert")
@@ -194,5 +219,13 @@ public class FormulaireController {
         model.addAttribute("message", result.getMessage());
         model.addAttribute("demandeIds", result.getDemandeIds());
         return "forms/confirmation";
+    }
+
+    private String buildFrontendQrUrl(Long id) {
+        String base = frontendBaseUrl == null ? "http://localhost:4200" : frontendBaseUrl.trim();
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/qr/" + id;
     }
 }

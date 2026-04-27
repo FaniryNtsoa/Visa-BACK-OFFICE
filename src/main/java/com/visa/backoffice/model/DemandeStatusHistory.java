@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.util.Date;
 
 @Entity
@@ -25,6 +26,9 @@ public class DemandeStatusHistory {
 
     @Column(name = "date_changement_status")
     private Date dateChangementStatus;
+
+    @Transient
+    private String statusLabel;
 
     public Integer getId() {
         return id;
@@ -56,5 +60,13 @@ public class DemandeStatusHistory {
 
     public void setDateChangementStatus(Date dateChangementStatus) {
         this.dateChangementStatus = dateChangementStatus;
+    }
+
+    public String getStatusLabel() {
+        return statusLabel;
+    }
+
+    public void setStatusLabel(String statusLabel) {
+        this.statusLabel = statusLabel;
     }
 }

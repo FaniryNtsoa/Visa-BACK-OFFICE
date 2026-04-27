@@ -386,6 +386,11 @@ button,
   color: #ffffff;
 }
 
+.btn-qr {
+  background: linear-gradient(135deg, #5b3fa0, #473084);
+  color: #ffffff;
+}
+
 .btn-scan {
   background: linear-gradient(135deg, #a86a27, #8b561f);
   color: #ffffff;

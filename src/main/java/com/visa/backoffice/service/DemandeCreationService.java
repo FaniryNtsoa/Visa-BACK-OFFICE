@@ -77,7 +77,7 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerNouvelleDemande(NouvelleDemandeForm form) {
-        CreationContext context = createBaseDemande(form, "Nouvelle demande", false);
+        CreationContext context = createBaseDemande(form, "Nouvelle demande de titre", false);
         return new FormResult("Nouvelle demande enregistree.", List.of(context.demande.getIdDemande().longValue()));
     }
 
