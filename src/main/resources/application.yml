@@ -18,7 +18,7 @@ server:
 
 app:
   # Utiliser l'IP locale (ex: http://192.168.1.10:4200) pour que le QR fonctionne sur mobile.
-  frontend-base-url: ${APP_FRONTEND_BASE_URL:http://localhost:4200}
+  frontend-base-url: ${APP_FRONTEND_BASE_URL:http://192.168.0.196:4200}
 
 management:
   endpoints:

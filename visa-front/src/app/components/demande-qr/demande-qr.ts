@@ -25,7 +25,7 @@ export class DemandeQrComponent {
     if (!Number.isNaN(id)) {
       this.demandeId = id;
       this.demandeService.getDemandeDetails(id).subscribe({
-        next: (data) => {
+        next: (data: any) => {
           this.zone.run(() => {
             this.statusHistory = data?.demandeStatusHistory ?? [];
             this.qrContent = this.buildQrContent(this.statusHistory);
