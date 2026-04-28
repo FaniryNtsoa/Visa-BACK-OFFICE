@@ -1,6 +1,6 @@
-TL : 
+TL : Faniry 3149
 
-DEV : Ranto 3113 et 
+DEV : Ranto 3113 et Dylan 3175 
 
 # Fonctionalité : Upload ou scan fichier 
 
