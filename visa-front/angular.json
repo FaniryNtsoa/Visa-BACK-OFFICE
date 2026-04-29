@@ -73,7 +73,7 @@
             "allowedHosts": [
               "localhost",
               "127.0.0.1",
-              "192.168.0.196"
+              "192.168.9.196"
             ]
           },
           "configurations": {
