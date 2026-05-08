@@ -1,0 +1,26 @@
+<section class="page-section">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">QR code</p>
+      <h2>Historique de statut</h2>
+    </div>
+    <a class="ghost-link" routerLink="/">Nouvelle recherche</a>
+  </div>
+
+  <div class="panel" *ngIf="loading">Chargement...</div>
+  <div class="panel" *ngIf="!loading && demandeId === null">
+    Identifiant invalide.
+  </div>
+
+  <div class="grid-two" *ngIf="!loading && demandeId !== null">
+    <div class="panel qr-panel">
+      <img [src]="qrImageUrl" alt="QR code">
+      <p>Demande #{{ demandeId }}</p>
+      <a class="ghost-link" [routerLink]="['/details', demandeId]">Voir les details</a>
+    </div>
+    <div class="panel">
+      <h3>Contenu du QR code</h3>
+      <pre class="qr-text">{{ qrContent }}</pre>
+    </div>
+  </div>
+</section>

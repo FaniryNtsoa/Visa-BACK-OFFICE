@@ -77,7 +77,7 @@ public class DemandeCreationService {
 
     @Transactional
     public FormResult creerNouvelleDemande(NouvelleDemandeForm form) {
-        CreationContext context = createBaseDemande(form, "Nouvelle demande", false);
+        CreationContext context = createBaseDemande(form, "Nouvelle demande de titre", false);
         return new FormResult("Nouvelle demande enregistree.", List.of(context.demande.getIdDemande().longValue()));
     }
 
@@ -209,21 +209,20 @@ public class DemandeCreationService {
     @Transactional
     public FormResult creerDuplicataSansDonnees(NouvelleDemandeForm form) {
         CreationContext demandePrincipale =
-            createBaseDemande(form, "Duplicata sans donnees anterieur", false);
-        setTypeDemande(demandePrincipale.demande,
-            "Duplicata sans donnees anterieur",
-            "Duplicata sans données anterieur");
+            createBaseDemande(form, "Nouvelle demande de titre", false);
+        setTypeDemande(demandePrincipale.demande, "Nouvelle demande de titre");
         approuverDemande(demandePrincipale.demande);
         createVisaAndCarteForApprovedDemande(demandePrincipale);
 
         Demande demandeDuplicata = createDemandeSimple(demandePrincipale.demande, "Duplicata", null, null);
+        approuverDemande(demandeDuplicata);
         CarteResidence carteDuplicata =
             copyCarteResidence(demandePrincipale.carteResidence, demandePrincipale.passeport, demandeDuplicata, true);
         carteDuplicata.setCarteResidenceDuplicata(demandePrincipale.carteResidence);
         carteResidenceRepository.save(carteDuplicata);
 
         return new FormResult(
-                "Duplicata sans donnees anterieur enregistre.",
+                "Duplicata sans donnees anterieures enregistre.",
             List.of(demandePrincipale.demande.getIdDemande().longValue(), demandeDuplicata.getIdDemande().longValue()));
     }
 

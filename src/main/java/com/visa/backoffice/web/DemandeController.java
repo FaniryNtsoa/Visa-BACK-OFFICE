@@ -40,6 +40,7 @@ public class DemandeController {
     private final DemandeurRepository demandeurRepository;
     private final PasseportRepository     passeportRepository;
     private final TypeVisaRepository typeVisaRepository;
+    private final TypeDemandeRepository typeDemandeRepository;
     private final SituationFamilialeRepository situationFamilialeRepository;
     private final NationaliteRepository nationaliteRepository;
     private final PieceJustificativeRepository pieceJustificativeRepository;
@@ -66,12 +67,14 @@ public class DemandeController {
                              DemandeInvestisseurRepository demandeInvestisseurRepository,
                              ProjetInvestissementRepository projetInvestissementRepository,
                              NumVisaTransformableRepository numVisaTransformableRepository,
+                             TypeDemandeRepository typeDemandeRepository,
                              StatusDemandeRepository statusDemandeRepository,
                              DemandeStatusHistoryRepository demandeStatusHistoryRepository) {
         this.demandeRepository = demandeRepository;
         this.demandeurRepository = demandeurRepository;
         this.passeportRepository = passeportRepository;
         this.typeVisaRepository = typeVisaRepository;
+        this.typeDemandeRepository = typeDemandeRepository;
         this.situationFamilialeRepository = situationFamilialeRepository;
         this.nationaliteRepository = nationaliteRepository;
         this.pieceJustificativeRepository = pieceJustificativeRepository;
@@ -89,23 +92,30 @@ public class DemandeController {
     public String listerDemandes(Model model) {
         List<Demande> demandes = demandeRepository.findAll();
         Map<Integer, Demandeur> demandeurs = demandeurRepository
-            .findAllById(extractIds(demandes, Demande::getIdDemandeur))
+            .findAllById(extractIdsLong(demandes, Demande::getIdDemandeur))
             .stream()
             .collect(Collectors.toMap(d -> d.getIdDemandeur().intValue(), Function.identity()));
+        Map<Integer, TypeDemande> typeDemandes = typeDemandeRepository
+            .findAllById(extractIdsInt(demandes, Demande::getIdTypeDemande))
+            .stream()
+            .collect(Collectors.toMap(td -> td.getIdTypeDemande().intValue(), Function.identity()));
         Map<Integer, TypeVisa> typeVisas = typeVisaRepository
-            .findAllById(extractIds(demandes, Demande::getIdTypeVisa))
+            .findAllById(extractIdsLong(demandes, Demande::getIdTypeVisa))
             .stream()
             .collect(Collectors.toMap(v -> v.getIdTypeVisa().intValue(), Function.identity()));
         Map<Integer, StatusDemande> statuts = statusDemandeRepository.findAll()
                 .stream()
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        Map<Integer, String> latestStatusLabelByDemande = buildLatestStatusLabelByDemande(demandes, statuts);
         Map<Integer, Boolean> piecesCompletesByDemande = buildPiecesCompletesByDemande(demandes);
         Map<Integer, Boolean> scanTermineByDemande = buildScanTermineByDemande(demandes, statuts);
         Map<Integer, Boolean> visaApprouveByDemande = buildVisaApprouveByDemande(demandes, statuts);
 
         model.addAttribute("demandes", demandes);
         model.addAttribute("demandeurs", demandeurs);
+        model.addAttribute("typeDemandes", typeDemandes);
         model.addAttribute("typeVisas", typeVisas);
+        model.addAttribute("latestStatusLabelByDemande", latestStatusLabelByDemande);
         model.addAttribute("piecesCompletesByDemande", piecesCompletesByDemande);
         model.addAttribute("scanTermineByDemande", scanTermineByDemande);
         model.addAttribute("visaApprouveByDemande", visaApprouveByDemande);
@@ -382,7 +392,14 @@ public class DemandeController {
         return "redirect:/demandes/liste";
     }
 
-    private Set<Long> extractIds(List<Demande> demandes, Function<Demande, Integer> extractor) {
+    private Set<Integer> extractIdsInt(List<Demande> demandes, Function<Demande, Integer> extractor) {
+        return demandes.stream()
+                .map(extractor)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Long> extractIdsLong(List<Demande> demandes, Function<Demande, Integer> extractor) {
         return demandes.stream()
                 .map(extractor)
                 .filter(Objects::nonNull)
@@ -414,6 +431,15 @@ public class DemandeController {
         for (Demande demande : demandes) {
             StatusDemande status = getLatestStatusForDemande(demande, statuts);
             result.put(demande.getIdDemande(), isVisaApprouve(status));
+        }
+        return result;
+    }
+
+    private Map<Integer, String> buildLatestStatusLabelByDemande(List<Demande> demandes, Map<Integer, StatusDemande> statuts) {
+        Map<Integer, String> result = new HashMap<>();
+        for (Demande demande : demandes) {
+            StatusDemande status = getLatestStatusForDemande(demande, statuts);
+            result.put(demande.getIdDemande(), status == null ? "N/A" : status.getStatus());
         }
         return result;
     }

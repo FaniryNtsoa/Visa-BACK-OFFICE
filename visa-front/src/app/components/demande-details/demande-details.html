@@ -1,0 +1,44 @@
+<section class="page-section">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Details demande</p>
+      <h2>Informations principales</h2>
+    </div>
+    <a class="ghost-link" routerLink="/">Nouvelle recherche</a>
+  </div>
+
+  <div class="panel" *ngIf="loading">Chargement...</div>
+  <div class="panel" *ngIf="!loading && !demande">
+    Aucune demande trouvee.
+  </div>
+
+  <div class="grid-two" *ngIf="!loading && demande">
+    <div class="panel">
+      <h3>Demande</h3>
+      <div class="info-row"><span>ID</span><strong>{{ demande.idDemande }}</strong></div>
+      <div class="info-row"><span>Numero demande</span><strong>{{ demande.numeroDemande || '-' }}</strong></div>
+      <div class="info-row"><span>Date</span><strong>{{ formatDate(demande.dateDemande) }}</strong></div>
+      <div class="info-row"><span>Type visa</span><strong>{{ typeVisa?.libelle || typeVisa?.type || '-' }}</strong></div>
+      <div class="info-row"><span>Type demande</span><strong>{{ typeDemande?.libelle || typeDemande?.type || '-' }}</strong></div>
+    </div>
+
+    <div class="panel">
+      <h3>Demandeur</h3>
+      <div class="info-row"><span>Nom</span><strong>{{ demandeur?.nom || '-' }}</strong></div>
+      <div class="info-row"><span>Prenom</span><strong>{{ demandeur?.prenom || '-' }}</strong></div>
+      <div class="info-row"><span>Telephone</span><strong>{{ demandeur?.telephone || '-' }}</strong></div>
+      <div class="info-row"><span>Passeport</span><strong>{{ demandeur?.idPasseport?.numeroPasseport || '-' }}</strong></div>
+      <a class="primary-link" [routerLink]="['/qr', demande.idDemande]">Afficher le QR code</a>
+    </div>
+  </div>
+
+  <div class="panel" *ngIf="!loading && statusHistory.length > 0">
+    <h3>Historique des statuts</h3>
+    <div class="timeline">
+      <div class="timeline-item" *ngFor="let item of statusHistory">
+        <div class="timeline-date">{{ formatDate(item.dateChangementStatus) }}</div>
+        <div class="timeline-title">{{ item.statusLabel || ('Statut ' + item.idStatus) }}</div>
+      </div>
+    </div>
+  </div>
+</section>

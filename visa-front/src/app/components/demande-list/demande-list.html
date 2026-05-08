@@ -1,0 +1,43 @@
+<section class="page-section">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Resultats</p>
+      <h2>Demandes trouvees</h2>
+    </div>
+    <a class="ghost-link" routerLink="/">Nouvelle recherche</a>
+  </div>
+
+  <div class="panel search-panel">
+    <input [(ngModel)]="numeroRecherche" placeholder="Entrez un numero" (keyup.enter)="rechercher()">
+    <button type="button" (click)="rechercher()">Rechercher</button>
+    <span class="hint">Passeport ou numero de demande</span>
+  </div>
+
+  <p class="form-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+
+  <div class="panel" *ngIf="isLoading">Chargement...</div>
+
+  <table class="data-table" *ngIf="!isLoading && demandes.length > 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Numero demande</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let d of demandes">
+        <td>{{ d.idDemande }}</td>
+        <td>{{ d.numeroDemande || '-' }}</td>
+        <td class="actions">
+          <a class="primary-link" [routerLink]="['/details', d.idDemande]">Voir details</a>
+          <a class="ghost-link" [routerLink]="['/qr', d.idDemande]">QR code</a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="panel" *ngIf="!isLoading && demandes.length === 0 && !errorMessage">
+    Aucun resultat pour ce numero.
+  </div>
+</section>
