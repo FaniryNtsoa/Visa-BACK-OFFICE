@@ -114,23 +114,26 @@ public class DemandeCreationService {
         setTypeDemande(demande, "Transfert visa");
         approuverDemande(demande);
 
-        Visa nouveauVisa = copyVisa(visa, nouveauPasseport, demande);
-        visaRepository.save(nouveauVisa);
+        if (isVisaApprouvee(demande)) {
+            Visa nouveauVisa = copyVisa(visa, nouveauPasseport, demande);
+            visaRepository.save(nouveauVisa);
 
-        Optional<CarteResidence> carteByNumero = Optional.empty();
-        if (hasText(visa.getNumeroVisa())) {
-            carteByNumero = carteResidenceRepository.findFirstByNumeroCarteOrderByIdCarteResidenceDesc(visa.getNumeroVisa());
+            Optional<CarteResidence> carteByNumero = Optional.empty();
+            if (hasText(visa.getNumeroVisa())) {
+                carteByNumero = carteResidenceRepository
+                    .findFirstByNumeroCarteOrderByIdCarteResidenceDesc(visa.getNumeroVisa());
+            }
+
+            CarteResidence carteSource = carteByNumero.orElseGet(() -> carteResidenceRepository
+                .findFirstByPasseportOrderByIdCarteResidenceDesc(ancienPasseport)
+                .orElse(null));
+            if (carteSource == null) {
+                throw new IllegalArgumentException("Carte residence introuvable pour ce visa.");
+            }
+
+            CarteResidence nouvelleCarte = copyCarteResidence(carteSource, nouveauPasseport, demande, false);
+            carteResidenceRepository.save(nouvelleCarte);
         }
-
-        CarteResidence carteSource = carteByNumero.orElseGet(() -> carteResidenceRepository
-            .findFirstByPasseportOrderByIdCarteResidenceDesc(ancienPasseport)
-            .orElse(null));
-        if (carteSource == null) {
-            throw new IllegalArgumentException("Carte residence introuvable pour ce visa.");
-        }
-
-        CarteResidence nouvelleCarte = copyCarteResidence(carteSource, nouveauPasseport, demande, false);
-        carteResidenceRepository.save(nouvelleCarte);
 
         return new FormResult("Transfert visa enregistre.", List.of(demande.getIdDemande().longValue()));
     }
@@ -162,9 +165,11 @@ public class DemandeCreationService {
         setTypeDemande(demande, "Duplicata");
         approuverDemande(demande);
 
-        CarteResidence duplicata = copyCarteResidence(carteOrigine, passeportCarte, demande, true);
-        duplicata.setCarteResidenceDuplicata(carteOrigine);
-        carteResidenceRepository.save(duplicata);
+        if (isVisaApprouvee(demande)) {
+            CarteResidence duplicata = copyCarteResidence(carteOrigine, passeportCarte, demande, true);
+            duplicata.setCarteResidenceDuplicata(carteOrigine);
+            carteResidenceRepository.save(duplicata);
+        }
 
         return new FormResult("Duplicata enregistre.", List.of(demande.getIdDemande().longValue()));
     }
@@ -187,17 +192,21 @@ public class DemandeCreationService {
         CreationContext demandeTransfert =
             createBaseDemande(form, "Transfert visa", false, form.getNumeroPasseport());
         setTypeDemande(demandeTransfert.demande, "Transfert visa");
-        approuverDemande(demandeTransfert.demande);
 
-        Visa visaTransfere = copyVisa(demandeAncienPasseport.visa, demandeTransfert.passeport, demandeTransfert.demande);
-        visaRepository.save(visaTransfere);
+        if (isVisaApprouvee(demandeTransfert.demande)) {
+            Visa visaTransfere = copyVisa(
+                demandeAncienPasseport.visa,
+                demandeTransfert.passeport,
+                demandeTransfert.demande);
+            visaRepository.save(visaTransfere);
 
-        CarteResidence carteTransferee = copyCarteResidence(
-            demandeAncienPasseport.carteResidence,
-            demandeTransfert.passeport,
-            demandeTransfert.demande,
-            false);
-        carteResidenceRepository.save(carteTransferee);
+            CarteResidence carteTransferee = copyCarteResidence(
+                demandeAncienPasseport.carteResidence,
+                demandeTransfert.passeport,
+                demandeTransfert.demande,
+                false);
+            carteResidenceRepository.save(carteTransferee);
+        }
 
         return new FormResult(
                 "Transfert visa sans donnees anterieur enregistre.",
@@ -215,11 +224,15 @@ public class DemandeCreationService {
         createVisaAndCarteForApprovedDemande(demandePrincipale);
 
         Demande demandeDuplicata = createDemandeSimple(demandePrincipale.demande, "Duplicata", null, null);
-        approuverDemande(demandeDuplicata);
-        CarteResidence carteDuplicata =
-            copyCarteResidence(demandePrincipale.carteResidence, demandePrincipale.passeport, demandeDuplicata, true);
-        carteDuplicata.setCarteResidenceDuplicata(demandePrincipale.carteResidence);
-        carteResidenceRepository.save(carteDuplicata);
+        if (isVisaApprouvee(demandeDuplicata)) {
+            CarteResidence carteDuplicata = copyCarteResidence(
+                demandePrincipale.carteResidence,
+                demandePrincipale.passeport,
+                demandeDuplicata,
+                true);
+            carteDuplicata.setCarteResidenceDuplicata(demandePrincipale.carteResidence);
+            carteResidenceRepository.save(carteDuplicata);
+        }
 
         return new FormResult(
                 "Duplicata sans donnees anterieures enregistre.",
@@ -531,6 +544,9 @@ public class DemandeCreationService {
     }
 
     private void createVisaAndCarteForApprovedDemande(CreationContext context) {
+        if (!isVisaApprouvee(context == null ? null : context.demande)) {
+            return;
+        }
         Visa visa = createVisaFromDemande(context.demande, context.passeport);
         CarteResidence carteResidence = createCarteResidenceFromVisa(context.demande, context.passeport, visa);
 
@@ -552,6 +568,27 @@ public class DemandeCreationService {
                 "visa approuvee",
                 "visa approuvée");
         addStatusHistory(demande, statusId);
+    }
+
+    private boolean isVisaApprouvee(Demande demande) {
+        if (demande == null || demande.getIdDemande() == null) {
+            return false;
+        }
+        return demandeStatusHistoryRepository
+            .findFirstByIdDemandeOrderByDateChangementStatusDesc(demande.getIdDemande().longValue())
+            .map(history -> {
+                Integer statusId = history.getIdStatus();
+                if (statusId == null) {
+                    return false;
+                }
+                return statusDemandeRepository.findById(statusId)
+                    .map(status -> {
+                        String normalized = normalize(status.getStatus());
+                        return normalized.equals("visa approuve") || normalized.equals("visa approuvee");
+                    })
+                    .orElse(false);
+            })
+            .orElse(false);
     }
 
     private void addStatusHistory(Demande demande, Integer statusId) {
