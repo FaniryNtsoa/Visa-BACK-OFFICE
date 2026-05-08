@@ -77,7 +77,7 @@
       '<span class="app-brand-mark" aria-hidden="true"></span>' +
       '<span>Visa Back Office</span>' +
       "</div>" +
-      '<p class="app-sidebar-subtitle">Administration</p>' +
+      '<p class="app-sidebar-subtitle">Administration (ETU 003113, ETU 003149, ETU 0075)</p>' +
       "</div>" +
       '<nav class="app-sidebar-nav" aria-label="Navigation principale"></nav>' +
       '<div class="app-sidebar-footer">' +
