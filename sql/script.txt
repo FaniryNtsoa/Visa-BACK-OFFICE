@@ -23,6 +23,8 @@ demandeur :
     lieu_naissance
     genre               
     adresse_mada        
+    photo_identite      
+    signature_digital   
     id_situation_familiale  FK
     id_nationalite          FK
     id_passeport            FK

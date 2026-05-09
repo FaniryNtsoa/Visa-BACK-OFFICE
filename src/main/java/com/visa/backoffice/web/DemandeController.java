@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -108,6 +109,7 @@ public class DemandeController {
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         Map<Integer, String> latestStatusLabelByDemande = buildLatestStatusLabelByDemande(demandes, statuts);
         Map<Integer, Boolean> piecesCompletesByDemande = buildPiecesCompletesByDemande(demandes);
+        Map<Integer, Boolean> photoSignatureCompletesByDemande = buildPhotoSignatureCompletesByDemande(demandes, demandeurs);
         Map<Integer, Boolean> scanTermineByDemande = buildScanTermineByDemande(demandes, statuts);
         Map<Integer, Boolean> visaApprouveByDemande = buildVisaApprouveByDemande(demandes, statuts);
 
@@ -117,6 +119,7 @@ public class DemandeController {
         model.addAttribute("typeVisas", typeVisas);
         model.addAttribute("latestStatusLabelByDemande", latestStatusLabelByDemande);
         model.addAttribute("piecesCompletesByDemande", piecesCompletesByDemande);
+        model.addAttribute("photoSignatureCompletesByDemande", photoSignatureCompletesByDemande);
         model.addAttribute("scanTermineByDemande", scanTermineByDemande);
         model.addAttribute("visaApprouveByDemande", visaApprouveByDemande);
         return "lists/demande-liste";
@@ -218,6 +221,13 @@ public class DemandeController {
         Demande demande = demandeRepository.findById(id.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
 
+        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
+                .orElse(null);
+        if (demandeur == null || !hasPhotoAndSignature(demandeur)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature du demandeur obligatoires avant le scan termine.");
+            return "redirect:/demandes/liste";
+        }
+
         List<DemandePieceJustificative> pieces = demandePieceJustificativeRepository.findByIdDemande(id);
         if (!areAllPiecesUploaded(pieces)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Toutes les pieces justificatives doivent etre uploadees.");
@@ -280,6 +290,18 @@ public class DemandeController {
             typeVisa = typeVisaRepository.findById(demande.getIdTypeVisa().longValue()).orElse(null);
         }
 
+        Map<Integer, StatusDemande> statuts = statusDemandeRepository.findAll()
+            .stream()
+            .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        StatusDemande status = getLatestStatusForDemande(demande, statuts);
+        boolean canEditPhotoSignature = isDossierCree(status);
+        String photoIdentiteUrl = hasText(demandeur.getPhotoIdentite())
+            ? "/demandes/" + id + "/demandeur/photo"
+            : null;
+        String signatureUrl = hasText(demandeur.getSignatureDigital())
+            ? "/demandes/" + id + "/demandeur/signature"
+            : null;
+
         model.addAttribute("demande", demande);
         model.addAttribute("demandeur", demandeur);
         model.addAttribute("passeport", passeport);
@@ -290,8 +312,133 @@ public class DemandeController {
         model.addAttribute("demandeTravailleur", demandeTravailleur);
         model.addAttribute("employeur", employeur);
         model.addAttribute("piecesJustificatives", piecesJustificatives);
+        model.addAttribute("photoIdentiteUrl", photoIdentiteUrl);
+        model.addAttribute("signatureUrl", signatureUrl);
+        model.addAttribute("canEditPhotoSignature", canEditPhotoSignature);
         return "details/demande-details";
         }
+
+    @GetMapping("/{id}/photo-signature")
+    public String afficherPhotoSignature(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
+        Demande demande = demandeRepository.findById(id.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
+        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable"));
+
+        Map<Integer, StatusDemande> statuts = statusDemandeRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        StatusDemande status = getLatestStatusForDemande(demande, statuts);
+        if (!isDossierCree(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables uniquement au statut dossier cree.");
+            return "redirect:/demandes/details/" + id;
+        }
+
+        String photoIdentiteUrl = hasText(demandeur.getPhotoIdentite())
+                ? "/demandes/" + id + "/demandeur/photo"
+                : null;
+        String signatureUrl = hasText(demandeur.getSignatureDigital())
+                ? "/demandes/" + id + "/demandeur/signature"
+                : null;
+
+        model.addAttribute("demande", demande);
+        model.addAttribute("demandeur", demandeur);
+        model.addAttribute("photoIdentiteUrl", photoIdentiteUrl);
+        model.addAttribute("signatureUrl", signatureUrl);
+        return "forms/demande-photo-signature";
+    }
+
+    @PostMapping("/{id}/photo-signature")
+    public String enregistrerPhotoSignature(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "photoData", required = false) String photoData,
+            @RequestParam(value = "signatureData", required = false) String signatureData,
+            RedirectAttributes redirectAttributes) {
+        Demande demande = demandeRepository.findById(id.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
+        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable"));
+
+        Map<Integer, StatusDemande> statuts = statusDemandeRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        StatusDemande status = getLatestStatusForDemande(demande, statuts);
+        if (!isDossierCree(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables uniquement au statut dossier cree.");
+            return "redirect:/demandes/details/" + id;
+        }
+
+        boolean updated = false;
+
+        try {
+            if (hasText(photoData)) {
+                String storedName = storeDemandeurMedia(id, photoData, "photo");
+                if (storedName != null) {
+                    deleteDemandeurFileIfExists(id, demandeur.getPhotoIdentite());
+                    demandeur.setPhotoIdentite(storedName);
+                    updated = true;
+                }
+            }
+
+            if (hasText(signatureData)) {
+                String storedName = storeDemandeurMedia(id, signatureData, "signature");
+                if (storedName != null) {
+                    deleteDemandeurFileIfExists(id, demandeur.getSignatureDigital());
+                    demandeur.setSignatureDigital(storedName);
+                    updated = true;
+                }
+            }
+        } catch (IllegalArgumentException | IOException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/demandes/" + id + "/photo-signature";
+        }
+
+        if (!updated) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Aucune capture a enregistrer.");
+            return "redirect:/demandes/" + id + "/photo-signature";
+        }
+
+        demandeurRepository.save(demandeur);
+        redirectAttributes.addFlashAttribute("successMessage", "Photo et signature enregistrees avec succes.");
+        return "redirect:/demandes/details/" + id;
+    }
+
+    @GetMapping("/{id}/demandeur/{type}")
+    @ResponseBody
+    public ResponseEntity<Resource> lireMediaDemandeur(
+            @PathVariable("id") Long id,
+            @PathVariable("type") String type) throws IOException {
+        Demande demande = demandeRepository.findById(id.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
+        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
+                .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable"));
+
+        String fileName = null;
+        if ("photo".equalsIgnoreCase(type)) {
+            fileName = demandeur.getPhotoIdentite();
+        } else if ("signature".equalsIgnoreCase(type)) {
+            fileName = demandeur.getSignatureDigital();
+        }
+
+        if (!hasText(fileName)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Path mediaDir = getDemandeurMediaDir(id);
+        Path filePath = mediaDir.resolve(Paths.get(fileName).getFileName().toString()).normalize();
+        if (!filePath.startsWith(mediaDir) || !Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new UrlResource(filePath.toUri());
+        String contentType = Files.probeContentType(filePath);
+        MediaType mediaType = contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType);
+
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
 
     @GetMapping("/modifier/{id}")
     public String afficherFormulaireModification(@PathVariable("id") Long id, Model model) {
@@ -413,6 +560,17 @@ public class DemandeController {
             List<DemandePieceJustificative> pieces =
                     demandePieceJustificativeRepository.findByIdDemande(demande.getIdDemande().longValue());
             result.put(demande.getIdDemande(), areAllPiecesUploaded(pieces));
+        }
+        return result;
+    }
+
+    private Map<Integer, Boolean> buildPhotoSignatureCompletesByDemande(
+            List<Demande> demandes,
+            Map<Integer, Demandeur> demandeurs) {
+        Map<Integer, Boolean> result = new HashMap<>();
+        for (Demande demande : demandes) {
+            Demandeur demandeur = demandeurs.get(demande.getIdDemandeur());
+            result.put(demande.getIdDemande(), hasPhotoAndSignature(demandeur));
         }
         return result;
     }
@@ -590,6 +748,112 @@ public class DemandeController {
         demandeStatusHistoryRepository.save(history);
     }
 
+    private boolean isDossierCree(StatusDemande status) {
+        if (status == null) {
+            return false;
+        }
+        String normalized = normalize(status.getStatus());
+        return normalized.equals("dossier cree");
+    }
+
+    private boolean hasPhotoAndSignature(Demandeur demandeur) {
+        if (demandeur == null) {
+            return false;
+        }
+        return hasText(demandeur.getPhotoIdentite()) && hasText(demandeur.getSignatureDigital());
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private Path getDemandeurMediaDir(Long demandeId) {
+        return uploadRoot.resolve(String.valueOf(demandeId)).resolve("demandeur");
+    }
+
+    private String storeDemandeurMedia(Long demandeId, String dataUrl, String prefix) throws IOException {
+        DataUrlPayload payload = parseDataUrl(dataUrl);
+        if (payload == null || payload.data == null || payload.data.length == 0) {
+            return null;
+        }
+        if (payload.mimeType == null || !payload.mimeType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new IllegalArgumentException("Format d'image invalide.");
+        }
+
+        Path mediaDir = getDemandeurMediaDir(demandeId);
+        Files.createDirectories(mediaDir);
+
+        String extension = resolveImageExtension(payload.mimeType);
+        String storedName = prefix + "-" + System.currentTimeMillis() + "." + extension;
+        Path filePath = mediaDir.resolve(storedName).normalize();
+
+        if (!filePath.startsWith(mediaDir)) {
+            throw new IllegalArgumentException("Nom de fichier invalide.");
+        }
+
+        Files.write(filePath, payload.data);
+        return storedName;
+    }
+
+    private DataUrlPayload parseDataUrl(String dataUrl) {
+        if (!hasText(dataUrl)) {
+            return null;
+        }
+
+        String trimmed = dataUrl.trim();
+        if (!trimmed.startsWith("data:")) {
+            throw new IllegalArgumentException("Donnees image invalides.");
+        }
+
+        int base64Index = trimmed.indexOf(";base64,");
+        if (base64Index < 0) {
+            throw new IllegalArgumentException("Donnees image invalides.");
+        }
+
+        String mimeType = trimmed.substring(5, base64Index);
+        String base64 = trimmed.substring(base64Index + 8);
+        if (!hasText(base64)) {
+            return null;
+        }
+
+        byte[] data;
+        try {
+            data = Base64.getDecoder().decode(base64);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("Donnees image invalides.");
+        }
+
+        DataUrlPayload payload = new DataUrlPayload();
+        payload.mimeType = mimeType;
+        payload.data = data;
+        return payload;
+    }
+
+    private String resolveImageExtension(String mimeType) {
+        if (mimeType == null) {
+            return "png";
+        }
+
+        String normalized = mimeType.toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "image/jpeg", "image/jpg" -> "jpg";
+            case "image/webp" -> "webp";
+            default -> "png";
+        };
+    }
+
+    private void deleteDemandeurFileIfExists(Long demandeId, String fileName) throws IOException {
+        if (!hasText(fileName)) {
+            return;
+        }
+
+        Path mediaDir = getDemandeurMediaDir(demandeId);
+        Path filePath = mediaDir.resolve(Paths.get(fileName).getFileName().toString()).normalize();
+        if (filePath.startsWith(mediaDir)) {
+            Files.deleteIfExists(filePath);
+        }
+    }
+
     private boolean isScanTermine(StatusDemande status) {
         if (status == null) {
             return false;
@@ -647,5 +911,10 @@ public class DemandeController {
         public boolean isImage() {
             return image;
         }
+    }
+
+    private static class DataUrlPayload {
+        private String mimeType;
+        private byte[] data;
     }
 }

@@ -655,6 +655,123 @@ tbody tr:hover {
   font-size: 0.91rem;
 }
 
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.media-grid-inline {
+  margin-top: 16px;
+}
+
+.media-card {
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: linear-gradient(170deg, #ffffff, #f3f7ff);
+  box-shadow: 0 8px 20px rgba(27, 63, 102, 0.08);
+  padding: 12px;
+}
+
+.media-card h4 {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  color: #1a4a7e;
+}
+
+.media-preview {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  display: block;
+}
+
+.media-empty {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+}
+
+.btn-photo {
+  background: linear-gradient(135deg, #435c8c, #30456c);
+  color: #ffffff;
+}
+
+.btn-photo.is-disabled {
+  background: #c5cedb;
+  color: #6b7786;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.photo-signature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.capture-panel {
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: linear-gradient(170deg, #ffffff, #f2f6ff);
+  padding: 16px;
+  box-shadow: 0 8px 20px rgba(24, 55, 94, 0.08);
+}
+
+.capture-stage {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f1f35;
+  border: 1px solid rgba(190, 207, 233, 0.8);
+  margin-top: 10px;
+}
+
+.capture-stage video,
+.capture-stage canvas {
+  width: 100%;
+  display: block;
+}
+
+.signature-pad {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px dashed rgba(140, 166, 204, 0.8);
+  margin-top: 10px;
+}
+
+.signature-pad canvas {
+  width: 100%;
+  display: block;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.capture-hint,
+.page-lead {
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.is-hidden {
+  display: none;
+}
+
 .preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

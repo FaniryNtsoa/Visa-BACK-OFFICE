@@ -10,6 +10,8 @@
 <header><h1>Details de la demande</h1></header>
 <main>
     <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="notice success" th:text="${successMessage}"></div>
         <div class="details-grid">
             <div class="details-item">
                 <h3>Demande</h3>
@@ -28,6 +30,18 @@
                 <p><strong>Adresse :</strong> <span th:text="${demandeur.adresseMada != null ? demandeur.adresseMada : 'N/A'}"></span></p>
                 <p><strong>Nationalite :</strong> <span th:text="${demandeur.idNationalite != null ? demandeur.idNationalite.nationalite : 'N/A'}"></span></p>
                 <p><strong>Situation familiale :</strong> <span th:text="${demandeur.idSituationFamiliale != null ? demandeur.idSituationFamiliale.situationFamiliale : 'N/A'}"></span></p>
+                <div class="media-grid">
+                    <div class="media-card">
+                        <h4>Photo d'identite</h4>
+                        <img th:if="${photoIdentiteUrl != null}" th:src="${photoIdentiteUrl}" alt="Photo d'identite" class="media-preview" />
+                        <p th:if="${photoIdentiteUrl == null}" class="media-empty">Non fournie</p>
+                    </div>
+                    <div class="media-card">
+                        <h4>Signature</h4>
+                        <img th:if="${signatureUrl != null}" th:src="${signatureUrl}" alt="Signature" class="media-preview" />
+                        <p th:if="${signatureUrl == null}" class="media-empty">Non fournie</p>
+                    </div>
+                </div>
             </div>
             <div class="details-item">
                 <h3>Passeport</h3>
@@ -81,6 +95,8 @@
         <div class="actions">
             <a th:href="@{/demandes/liste}" class="action-link mr-3">Retour liste</a>
             <a th:href="@{/demandes/modifier/{id}(id=${demande.idDemande})}" class="btn-edit">Modifier</a>
+            <a th:if="${canEditPhotoSignature}" th:href="@{/demandes/{id}/photo-signature(id=${demande.idDemande})}" class="btn-photo">Photo et signature</a>
+            <span th:if="${!canEditPhotoSignature}" class="btn-photo is-disabled" aria-disabled="true">Photo et signature</span>
         </div>
     </div>
 </main>
