@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Photo et signature</title>
+    <link rel="stylesheet" href="/css/forms.css">
+</head>
+<body>
+<header><h1>Photo et signature</h1></header>
+<main>
+    <div class="card">
+        <div th:if="${errorMessage}" class="notice error" th:text="${errorMessage}"></div>
+        <div th:if="${successMessage}" class="notice success" th:text="${successMessage}"></div>
+        <p class="page-lead">Capturez une photo d'identite et la signature du demandeur. Vous pouvez modifier l'un ou l'autre.</p>
+
+        <div class="media-grid media-grid-inline">
+            <div class="media-card">
+                <h4>Apercu photo actuelle</h4>
+                <img th:if="${photoIdentiteUrl != null}" th:src="${photoIdentiteUrl}" alt="Photo actuelle" class="media-preview" />
+                <p th:if="${photoIdentiteUrl == null}" class="media-empty">Non fournie</p>
+            </div>
+            <div class="media-card">
+                <h4>Apercu signature actuelle</h4>
+                <img th:if="${signatureUrl != null}" th:src="${signatureUrl}" alt="Signature actuelle" class="media-preview" />
+                <p th:if="${signatureUrl == null}" class="media-empty">Non fournie</p>
+            </div>
+        </div>
+
+        <form th:action="@{/demandes/{id}/photo-signature(id=${demande.idDemande})}" method="post">
+            <input type="hidden" id="photoData" name="photoData" />
+            <input type="hidden" id="signatureData" name="signatureData" />
+
+            <div class="photo-signature-grid">
+                <section class="capture-panel">
+                    <h3>Photo d'identite</h3>
+                    <div class="capture-stage">
+                        <video id="photoVideo" playsinline autoplay muted></video>
+                        <canvas id="photoCanvas" width="520" height="390"></canvas>
+                    </div>
+                    <div class="capture-actions">
+                        <button type="button" id="startCameraBtn">Demarrer camera</button>
+                        <button type="button" id="capturePhotoBtn">Prendre photo</button>
+                        <button type="button" id="retakePhotoBtn">Reprendre</button>
+                    </div>
+                    <p class="capture-hint">Utilisez la camera frontale pour centrer le visage avant de capturer.</p>
+                </section>
+
+                <section class="capture-panel">
+                    <h3>Signature</h3>
+                    <div class="signature-pad">
+                        <canvas id="signatureCanvas" width="520" height="240"></canvas>
+                    </div>
+                    <div class="capture-actions">
+                        <button type="button" id="clearSignatureBtn">Effacer signature</button>
+                    </div>
+                    <p class="capture-hint">Signez avec le trackpad ou la souris. La signature est enregistree en noir.</p>
+                </section>
+            </div>
+
+            <div class="actions actions-end">
+                <a th:href="@{/demandes/details/{id}(id=${demande.idDemande})}" class="action-link">Retour details</a>
+                <button type="submit" class="action-primary">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</main>
+<script src="/js/visa-forms.js"></script>
+<script src="/js/photo-signature.js"></script>
+</body>
+</html>
