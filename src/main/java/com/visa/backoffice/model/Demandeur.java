@@ -18,12 +18,6 @@ public class Demandeur {
     private String genre;
     private String adresseMada;
 
-    @Column(name = "photo_identite")
-    private String photoIdentite;
-
-    @Column(name = "signature_digital")
-    private String signatureDigital;
-
     @ManyToOne
     @JoinColumn(name = "id_situation_familiale")
     private SituationFamiliale idSituationFamiliale;
@@ -35,8 +29,6 @@ public class Demandeur {
     @ManyToOne
     @JoinColumn(name = "id_passeport")
     private Passeport idPasseport;
-
-    // Getters and Setters
 
     public Long getIdDemandeur() {
         return idDemandeur;
@@ -92,22 +84,6 @@ public class Demandeur {
 
     public void setAdresseMada(String adresseMada) {
         this.adresseMada = adresseMada;
-    }
-
-    public String getPhotoIdentite() {
-        return photoIdentite;
-    }
-
-    public void setPhotoIdentite(String photoIdentite) {
-        this.photoIdentite = photoIdentite;
-    }
-
-    public String getSignatureDigital() {
-        return signatureDigital;
-    }
-
-    public void setSignatureDigital(String signatureDigital) {
-        this.signatureDigital = signatureDigital;
     }
 
     public SituationFamiliale getIdSituationFamiliale() {

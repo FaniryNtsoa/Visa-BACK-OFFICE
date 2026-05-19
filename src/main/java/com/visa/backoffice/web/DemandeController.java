@@ -2,6 +2,8 @@ package com.visa.backoffice.web;
 
 import com.visa.backoffice.model.*;
 import com.visa.backoffice.repository.*;
+import com.visa.backoffice.service.DemandePdfExportService;
+import com.visa.backoffice.support.SystemPieceLabels;
 import com.visa.backoffice.web.form.NouvelleDemandeForm;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +25,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
@@ -53,6 +56,7 @@ public class DemandeController {
     private final NumVisaTransformableRepository numVisaTransformableRepository;
     private final StatusDemandeRepository statusDemandeRepository;
     private final DemandeStatusHistoryRepository demandeStatusHistoryRepository;
+    private final DemandePdfExportService demandePdfExportService;
     private final Path uploadRoot = Paths.get("uploads", "demandes");
 
     public DemandeController(DemandeRepository demandeRepository, 
@@ -70,7 +74,8 @@ public class DemandeController {
                              NumVisaTransformableRepository numVisaTransformableRepository,
                              TypeDemandeRepository typeDemandeRepository,
                              StatusDemandeRepository statusDemandeRepository,
-                             DemandeStatusHistoryRepository demandeStatusHistoryRepository) {
+                             DemandeStatusHistoryRepository demandeStatusHistoryRepository,
+                             DemandePdfExportService demandePdfExportService) {
         this.demandeRepository = demandeRepository;
         this.demandeurRepository = demandeurRepository;
         this.passeportRepository = passeportRepository;
@@ -87,6 +92,7 @@ public class DemandeController {
         this.numVisaTransformableRepository = numVisaTransformableRepository;
         this.statusDemandeRepository = statusDemandeRepository;
         this.demandeStatusHistoryRepository = demandeStatusHistoryRepository;
+        this.demandePdfExportService = demandePdfExportService;
     }
 
     @GetMapping("/liste")
@@ -109,7 +115,8 @@ public class DemandeController {
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         Map<Integer, String> latestStatusLabelByDemande = buildLatestStatusLabelByDemande(demandes, statuts);
         Map<Integer, Boolean> piecesCompletesByDemande = buildPiecesCompletesByDemande(demandes);
-        Map<Integer, Boolean> photoSignatureCompletesByDemande = buildPhotoSignatureCompletesByDemande(demandes, demandeurs);
+        Map<Integer, Boolean> photoSignatureCompletesByDemande = buildPhotoSignatureCompletesByDemande(demandes);
+        Map<Integer, Boolean> photoTermineByDemande = buildPhotoTermineByDemande(demandes, statuts);
         Map<Integer, Boolean> scanTermineByDemande = buildScanTermineByDemande(demandes, statuts);
         Map<Integer, Boolean> visaApprouveByDemande = buildVisaApprouveByDemande(demandes, statuts);
 
@@ -120,6 +127,7 @@ public class DemandeController {
         model.addAttribute("latestStatusLabelByDemande", latestStatusLabelByDemande);
         model.addAttribute("piecesCompletesByDemande", piecesCompletesByDemande);
         model.addAttribute("photoSignatureCompletesByDemande", photoSignatureCompletesByDemande);
+        model.addAttribute("photoTermineByDemande", photoTermineByDemande);
         model.addAttribute("scanTermineByDemande", scanTermineByDemande);
         model.addAttribute("visaApprouveByDemande", visaApprouveByDemande);
         return "lists/demande-liste";
@@ -130,12 +138,27 @@ public class DemandeController {
         Demande demande = demandeRepository.findById(id.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
 
-        List<DemandePieceJustificative> demandesPieces = dedupePieces(demandePieceJustificativeRepository.findByIdDemande(id));
-        Set<Long> pieceIds = demandesPieces.stream()
+        List<DemandePieceJustificative> demandesPiecesRaw = dedupePieces(demandePieceJustificativeRepository.findByIdDemande(id));
+        Set<Long> pieceIds = demandesPiecesRaw.stream()
             .map(DemandePieceJustificative::getIdPieceJustificative)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
-        Map<Long, PieceJustificative> piecesById = pieceJustificativeRepository.findAllById(pieceIds)
+        Map<Long, PieceJustificative> piecesByIdAll = pieceJustificativeRepository.findAllById(pieceIds)
+                .stream()
+                .collect(Collectors.toMap(PieceJustificative::getIdPieceJustificative, Function.identity()));
+
+        List<DemandePieceJustificative> demandesPieces = demandesPiecesRaw.stream()
+                .filter(dpj -> {
+                    PieceJustificative pj = piecesByIdAll.get(dpj.getIdPieceJustificative());
+                    return pj == null || !SystemPieceLabels.isSystemPiece(pj.getPieceJustificative());
+                })
+                .toList();
+
+        Set<Long> visiblePieceIds = demandesPieces.stream()
+                .map(DemandePieceJustificative::getIdPieceJustificative)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, PieceJustificative> piecesById = pieceJustificativeRepository.findAllById(visiblePieceIds)
                 .stream()
                 .collect(Collectors.toMap(PieceJustificative::getIdPieceJustificative, Function.identity()));
 
@@ -165,10 +188,8 @@ public class DemandeController {
             @PathVariable("id") Long id,
             @PathVariable("pieceId") Long pieceId,
             @PathVariable("fileName") String fileName) throws IOException {
-        Path pieceDir = uploadRoot.resolve(String.valueOf(id)).resolve(String.valueOf(pieceId)).normalize();
-        Path filePath = pieceDir.resolve(Paths.get(fileName).getFileName().toString()).normalize();
-
-        if (!filePath.startsWith(pieceDir) || !Files.exists(filePath)) {
+        Path filePath = demandePdfExportService.resolvePieceFile(id, pieceId, fileName);
+        if (filePath == null || !Files.exists(filePath)) {
             return ResponseEntity.notFound().build();
         }
 
@@ -221,9 +242,16 @@ public class DemandeController {
         Demande demande = demandeRepository.findById(id.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
 
-        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
-                .orElse(null);
-        if (demandeur == null || !hasPhotoAndSignature(demandeur)) {
+        Map<Integer, StatusDemande> statutsMap = statusDemandeRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        StatusDemande latest = getLatestStatusForDemande(demande, statutsMap);
+        if (!isPhotoTermine(latest)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Le statut « Photo terminé » est requis avant de marquer le scan terminé.");
+            return "redirect:/demandes/liste";
+        }
+
+        if (!hasPhotoAndSignatureForDemande(id)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature du demandeur obligatoires avant le scan termine.");
             return "redirect:/demandes/liste";
         }
@@ -272,17 +300,38 @@ public class DemandeController {
                     .orElse(null);
             }
 
+            ensureSystemPiecesForDemande(id);
+
             List<DemandePieceJustificative> piecesSelectionnees =
-                demandePieceJustificativeRepository.findByIdDemande(demande.getIdDemande().longValue());
-            List<PieceJustificative> piecesJustificatives;
-            if (piecesSelectionnees.isEmpty()) {
-                piecesJustificatives = List.of();
-            } else {
-                Set<Long> pieceIds = piecesSelectionnees.stream()
+                demandePieceJustificativeRepository.findByIdDemandeOrderByIdDemandePieceJustificativeAsc(demande.getIdDemande().longValue());
+            Set<Long> pieceIds = piecesSelectionnees.stream()
                     .map(DemandePieceJustificative::getIdPieceJustificative)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
-                piecesJustificatives = pieceJustificativeRepository.findAllById(pieceIds);
+            Map<Long, PieceJustificative> piecesById = pieceIds.isEmpty()
+                    ? Map.of()
+                    : pieceJustificativeRepository.findAllById(pieceIds).stream()
+                            .collect(Collectors.toMap(PieceJustificative::getIdPieceJustificative, Function.identity()));
+            List<PieceJustificative> piecesJustificatives = piecesSelectionnees.stream()
+                    .map(DemandePieceJustificative::getIdPieceJustificative)
+                    .map(piecesById::get)
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            Map<Long, List<UploadedFileView>> fichiersParPiece = new HashMap<>();
+            for (DemandePieceJustificative dpj : piecesSelectionnees) {
+                Long pieceId = dpj.getIdPieceJustificative();
+                if (pieceId == null) {
+                    continue;
+                }
+                List<String> files = parseUploadedFiles(dpj.getPhotoPieceJustificative());
+                List<UploadedFileView> views = files.stream()
+                        .map(file -> new UploadedFileView(
+                                file,
+                                "/demandes/" + id + "/pieces/" + pieceId + "/files/" + file,
+                                isImageFile(file)))
+                        .toList();
+                fichiersParPiece.put(pieceId, views);
             }
 
         TypeVisa typeVisa = null;
@@ -294,13 +343,11 @@ public class DemandeController {
             .stream()
             .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         StatusDemande status = getLatestStatusForDemande(demande, statuts);
-        boolean canEditPhotoSignature = isDossierCree(status);
-        String photoIdentiteUrl = hasText(demandeur.getPhotoIdentite())
-            ? "/demandes/" + id + "/demandeur/photo"
-            : null;
-        String signatureUrl = hasText(demandeur.getSignatureDigital())
-            ? "/demandes/" + id + "/demandeur/signature"
-            : null;
+        boolean scanTermine = isScanTermine(status);
+        boolean visaApprouve = isVisaApprouve(status);
+        boolean canEditPhotoSignature = (isDossierCree(status) || isPhotoTermine(status)) && !scanTermine && !visaApprouve;
+        String photoIdentiteUrl = hasCaptureFile(id, true) ? "/demandes/" + id + "/captures/photo" : null;
+        String signatureUrl = hasCaptureFile(id, false) ? "/demandes/" + id + "/captures/signature" : null;
 
         model.addAttribute("demande", demande);
         model.addAttribute("demandeur", demandeur);
@@ -312,9 +359,13 @@ public class DemandeController {
         model.addAttribute("demandeTravailleur", demandeTravailleur);
         model.addAttribute("employeur", employeur);
         model.addAttribute("piecesJustificatives", piecesJustificatives);
+        model.addAttribute("piecesSelectionnees", piecesSelectionnees);
+        model.addAttribute("piecesById", piecesById);
+        model.addAttribute("fichiersParPiece", fichiersParPiece);
         model.addAttribute("photoIdentiteUrl", photoIdentiteUrl);
         model.addAttribute("signatureUrl", signatureUrl);
         model.addAttribute("canEditPhotoSignature", canEditPhotoSignature);
+        model.addAttribute("scanTermine", scanTermine);
         return "details/demande-details";
         }
 
@@ -329,17 +380,17 @@ public class DemandeController {
                 .stream()
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         StatusDemande status = getLatestStatusForDemande(demande, statuts);
-        if (!isDossierCree(status)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables uniquement au statut dossier cree.");
+        if (!isDossierCree(status) && !isPhotoTermine(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables aux statuts « Dossier créé » ou « Photo terminé » (avant scan terminé).");
+            return "redirect:/demandes/details/" + id;
+        }
+        if (isScanTermine(demande) || isVisaApprouve(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature non modifiables après scan ou visa approuvé.");
             return "redirect:/demandes/details/" + id;
         }
 
-        String photoIdentiteUrl = hasText(demandeur.getPhotoIdentite())
-                ? "/demandes/" + id + "/demandeur/photo"
-                : null;
-        String signatureUrl = hasText(demandeur.getSignatureDigital())
-                ? "/demandes/" + id + "/demandeur/signature"
-                : null;
+        String photoIdentiteUrl = hasCaptureFile(id, true) ? "/demandes/" + id + "/captures/photo" : null;
+        String signatureUrl = hasCaptureFile(id, false) ? "/demandes/" + id + "/captures/signature" : null;
 
         model.addAttribute("demande", demande);
         model.addAttribute("demandeur", demandeur);
@@ -356,35 +407,55 @@ public class DemandeController {
             RedirectAttributes redirectAttributes) {
         Demande demande = demandeRepository.findById(id.intValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
-        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
+        demandeurRepository.findById(demande.getIdDemandeur().longValue())
                 .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable"));
 
         Map<Integer, StatusDemande> statuts = statusDemandeRepository.findAll()
                 .stream()
                 .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
         StatusDemande status = getLatestStatusForDemande(demande, statuts);
-        if (!isDossierCree(status)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables uniquement au statut dossier cree.");
+        if (!isDossierCree(status) && !isPhotoTermine(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature modifiables aux statuts « Dossier créé » ou « Photo terminé ».");
+            return "redirect:/demandes/details/" + id;
+        }
+        if (isScanTermine(demande) || isVisaApprouve(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Photo et signature non modifiables après scan ou visa approuvé.");
             return "redirect:/demandes/details/" + id;
         }
 
         boolean updated = false;
 
         try {
+            Long photoPieceId = resolveSystemPieceId(SystemPieceLabels.PHOTO_IDENTITE);
+            Long signaturePieceId = resolveSystemPieceId(SystemPieceLabels.SIGNATURE_DIGITALE);
+            if (photoPieceId == null || signaturePieceId == null) {
+                throw new IllegalArgumentException("Pieces catalogue Photo d'identite / Signature digitale introuvables.");
+            }
+
             if (hasText(photoData)) {
-                String storedName = storeDemandeurMedia(id, photoData, "photo");
+                String storedName = storeCaptureDataUrlOnPiece(id, photoPieceId, photoData, "photo");
                 if (storedName != null) {
-                    deleteDemandeurFileIfExists(id, demandeur.getPhotoIdentite());
-                    demandeur.setPhotoIdentite(storedName);
+                    DemandePieceJustificative dpj = demandePieceJustificativeRepository
+                            .findFirstByIdDemandeAndIdPieceJustificative(id, photoPieceId)
+                            .orElseThrow(() -> new IllegalArgumentException("Ligne piece photo introuvable."));
+                    deleteOldPieceFilesIfAny(id, photoPieceId, dpj.getPhotoPieceJustificative());
+                    dpj.setPhotoPieceJustificative(storedName);
+                    dpj.setDateDepot(new Date());
+                    demandePieceJustificativeRepository.save(dpj);
                     updated = true;
                 }
             }
 
             if (hasText(signatureData)) {
-                String storedName = storeDemandeurMedia(id, signatureData, "signature");
+                String storedName = storeCaptureDataUrlOnPiece(id, signaturePieceId, signatureData, "signature");
                 if (storedName != null) {
-                    deleteDemandeurFileIfExists(id, demandeur.getSignatureDigital());
-                    demandeur.setSignatureDigital(storedName);
+                    DemandePieceJustificative dpj = demandePieceJustificativeRepository
+                            .findFirstByIdDemandeAndIdPieceJustificative(id, signaturePieceId)
+                            .orElseThrow(() -> new IllegalArgumentException("Ligne piece signature introuvable."));
+                    deleteOldPieceFilesIfAny(id, signaturePieceId, dpj.getPhotoPieceJustificative());
+                    dpj.setPhotoPieceJustificative(storedName);
+                    dpj.setDateDepot(new Date());
+                    demandePieceJustificativeRepository.save(dpj);
                     updated = true;
                 }
             }
@@ -398,46 +469,80 @@ public class DemandeController {
             return "redirect:/demandes/" + id + "/photo-signature";
         }
 
-        demandeurRepository.save(demandeur);
+        Map<Integer, StatusDemande> statutsAfter = statusDemandeRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(StatusDemande::getIdStatus, Function.identity()));
+        StatusDemande latestAfter = getLatestStatusForDemande(demande, statutsAfter);
+        if (hasPhotoAndSignatureForDemande(id) && isDossierCree(latestAfter)) {
+            Integer photoTermineId = ensureStatus("Photo terminé", "Photo terminee", "photo termine");
+            addStatusHistory(demande, photoTermineId);
+        }
+
         redirectAttributes.addFlashAttribute("successMessage", "Photo et signature enregistrees avec succes.");
         return "redirect:/demandes/details/" + id;
     }
 
-    @GetMapping("/{id}/demandeur/{type}")
+    @GetMapping("/{id}/captures/{kind}")
     @ResponseBody
-    public ResponseEntity<Resource> lireMediaDemandeur(
+    public ResponseEntity<Resource> lireCapture(
             @PathVariable("id") Long id,
-            @PathVariable("type") String type) throws IOException {
-        Demande demande = demandeRepository.findById(id.intValue())
-                .orElseThrow(() -> new IllegalArgumentException("Demande introuvable : " + id));
-        Demandeur demandeur = demandeurRepository.findById(demande.getIdDemandeur().longValue())
-                .orElseThrow(() -> new IllegalArgumentException("Demandeur introuvable"));
-
-        String fileName = null;
-        if ("photo".equalsIgnoreCase(type)) {
-            fileName = demandeur.getPhotoIdentite();
-        } else if ("signature".equalsIgnoreCase(type)) {
-            fileName = demandeur.getSignatureDigital();
-        }
-
-        if (!hasText(fileName)) {
+            @PathVariable("kind") String kind) throws IOException {
+        boolean photo = "photo".equalsIgnoreCase(kind);
+        if (!photo && !"signature".equalsIgnoreCase(kind)) {
             return ResponseEntity.notFound().build();
         }
-
-        Path mediaDir = getDemandeurMediaDir(id);
-        Path filePath = mediaDir.resolve(Paths.get(fileName).getFileName().toString()).normalize();
-        if (!filePath.startsWith(mediaDir) || !Files.exists(filePath)) {
+        String label = photo ? SystemPieceLabels.PHOTO_IDENTITE : SystemPieceLabels.SIGNATURE_DIGITALE;
+        Long pieceId = resolveSystemPieceId(label);
+        if (pieceId == null) {
             return ResponseEntity.notFound().build();
         }
-
+        DemandePieceJustificative dpj = demandePieceJustificativeRepository
+                .findFirstByIdDemandeAndIdPieceJustificative(id, pieceId)
+                .orElse(null);
+        if (dpj == null) {
+            return ResponseEntity.notFound().build();
+        }
+        List<String> files = parseUploadedFiles(dpj.getPhotoPieceJustificative());
+        if (files.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        String fileName = files.get(0);
+        Path filePath = demandePdfExportService.resolvePieceFile(id, pieceId, fileName);
+        if (filePath == null || !Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
         Resource resource = new UrlResource(filePath.toUri());
         String contentType = Files.probeContentType(filePath);
         MediaType mediaType = contentType == null ? MediaType.APPLICATION_OCTET_STREAM : MediaType.parseMediaType(contentType);
-
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
+    }
+
+    @GetMapping(value = "/{id}/export/pieces-apercu", produces = MediaType.APPLICATION_PDF_VALUE)
+    @ResponseBody
+    public ResponseEntity<byte[]> exporterApercuPieces(@PathVariable("id") Long id) throws IOException {
+        byte[] pdf = demandePdfExportService.buildPiecesPreviewPdf(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"pieces-demande-" + id + ".pdf\"")
+                .body(pdf);
+    }
+
+    @GetMapping(value = "/{id}/export/lettre-recu", produces = MediaType.APPLICATION_PDF_VALUE)
+    @ResponseBody
+    public ResponseEntity<byte[]> exporterLettreRecu(@PathVariable("id") Long id) throws IOException {
+        try {
+            byte[] pdf = demandePdfExportService.buildLettreRecuPdf(id);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"lettre-recu-demande-" + id + ".pdf\"")
+                    .body(pdf);
+        } catch (org.springframework.web.server.ResponseStatusException ex) {
+            if (ex.getStatusCode().value() == HttpStatus.FORBIDDEN.value()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            throw ex;
+        }
     }
 
     @GetMapping("/modifier/{id}")
@@ -488,7 +593,9 @@ public class DemandeController {
         model.addAttribute("situations", situationFamilialeRepository.findAll());
         model.addAttribute("nationalites", nationaliteRepository.findAll());
         model.addAttribute("typeVisas", typeVisaRepository.findAll());
-        model.addAttribute("pieces", pieceJustificativeRepository.findAll());
+        model.addAttribute("pieces", pieceJustificativeRepository.findAll().stream()
+                .filter(p -> !SystemPieceLabels.isSystemPiece(p.getPieceJustificative()))
+                .toList());
 
         return "modifs/demande-modifier";
     }
@@ -522,6 +629,10 @@ public class DemandeController {
         // Ajout des nouvelles pièces justificatives uniquement
         if (pieces != null) {
             for (Long pieceId : pieces) {
+                PieceJustificative meta = pieceJustificativeRepository.findById(pieceId).orElse(null);
+                if (meta != null && SystemPieceLabels.isSystemPiece(meta.getPieceJustificative())) {
+                    continue;
+                }
                 boolean existeDeja = demandePieceJustificativeRepository
                         .findFirstByIdDemandeAndIdPieceJustificative(id, pieceId)
                         .isPresent();
@@ -564,13 +675,22 @@ public class DemandeController {
         return result;
     }
 
-    private Map<Integer, Boolean> buildPhotoSignatureCompletesByDemande(
-            List<Demande> demandes,
-            Map<Integer, Demandeur> demandeurs) {
+    private Map<Integer, Boolean> buildPhotoSignatureCompletesByDemande(List<Demande> demandes) {
         Map<Integer, Boolean> result = new HashMap<>();
         for (Demande demande : demandes) {
-            Demandeur demandeur = demandeurs.get(demande.getIdDemandeur());
-            result.put(demande.getIdDemande(), hasPhotoAndSignature(demandeur));
+            if (demande.getIdDemande() == null) {
+                continue;
+            }
+            result.put(demande.getIdDemande(), hasPhotoAndSignatureForDemande(demande.getIdDemande().longValue()));
+        }
+        return result;
+    }
+
+    private Map<Integer, Boolean> buildPhotoTermineByDemande(List<Demande> demandes, Map<Integer, StatusDemande> statuts) {
+        Map<Integer, Boolean> result = new HashMap<>();
+        for (Demande demande : demandes) {
+            StatusDemande status = getLatestStatusForDemande(demande, statuts);
+            result.put(demande.getIdDemande(), isPhotoTermine(status));
         }
         return result;
     }
@@ -756,22 +876,58 @@ public class DemandeController {
         return normalized.equals("dossier cree");
     }
 
-    private boolean hasPhotoAndSignature(Demandeur demandeur) {
-        if (demandeur == null) {
+    private boolean isPhotoTermine(StatusDemande status) {
+        if (status == null || status.getStatus() == null) {
             return false;
         }
-        return hasText(demandeur.getPhotoIdentite()) && hasText(demandeur.getSignatureDigital());
+        String normalized = normalize(status.getStatus());
+        return normalized.equals("photo termine");
     }
 
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
+    private boolean hasPhotoAndSignatureForDemande(Long demandeId) {
+        return hasCaptureFile(demandeId, true) && hasCaptureFile(demandeId, false);
     }
 
-    private Path getDemandeurMediaDir(Long demandeId) {
-        return uploadRoot.resolve(String.valueOf(demandeId)).resolve("demandeur");
+    private boolean hasCaptureFile(Long demandeId, boolean photo) {
+        String label = photo ? SystemPieceLabels.PHOTO_IDENTITE : SystemPieceLabels.SIGNATURE_DIGITALE;
+        Long pieceId = resolveSystemPieceId(label);
+        if (pieceId == null) {
+            return false;
+        }
+        return demandePieceJustificativeRepository
+                .findFirstByIdDemandeAndIdPieceJustificative(demandeId, pieceId)
+                .map(d -> !parseUploadedFiles(d.getPhotoPieceJustificative()).isEmpty())
+                .orElse(false);
     }
 
-    private String storeDemandeurMedia(Long demandeId, String dataUrl, String prefix) throws IOException {
+    private Long resolveSystemPieceId(String label) {
+        return pieceJustificativeRepository.findFirstByPieceJustificativeIgnoreCase(label)
+                .map(PieceJustificative::getIdPieceJustificative)
+                .orElse(null);
+    }
+
+    private void ensureSystemPiecesForDemande(Long idDemande) {
+        Demande demande = demandeRepository.findById(idDemande.intValue()).orElse(null);
+        if (demande == null || demande.getIdDemande() == null) {
+            return;
+        }
+        long id = demande.getIdDemande().longValue();
+        for (String label : java.util.List.of(SystemPieceLabels.PHOTO_IDENTITE, SystemPieceLabels.SIGNATURE_DIGITALE)) {
+            pieceJustificativeRepository.findFirstByPieceJustificativeIgnoreCase(label).ifPresent(piece -> {
+                if (demandePieceJustificativeRepository
+                        .findFirstByIdDemandeAndIdPieceJustificative(id, piece.getIdPieceJustificative())
+                        .isEmpty()) {
+                    DemandePieceJustificative dpj = new DemandePieceJustificative();
+                    dpj.setIdDemande(id);
+                    dpj.setIdPieceJustificative(piece.getIdPieceJustificative());
+                    dpj.setDateDepot(new Date());
+                    demandePieceJustificativeRepository.save(dpj);
+                }
+            });
+        }
+    }
+
+    private String storeCaptureDataUrlOnPiece(Long demandeId, Long pieceId, String dataUrl, String prefix) throws IOException {
         DataUrlPayload payload = parseDataUrl(dataUrl);
         if (payload == null || payload.data == null || payload.data.length == 0) {
             return null;
@@ -779,20 +935,29 @@ public class DemandeController {
         if (payload.mimeType == null || !payload.mimeType.toLowerCase(Locale.ROOT).startsWith("image/")) {
             throw new IllegalArgumentException("Format d'image invalide.");
         }
-
-        Path mediaDir = getDemandeurMediaDir(demandeId);
-        Files.createDirectories(mediaDir);
-
+        Path pieceDir = uploadRoot.resolve(String.valueOf(demandeId)).resolve(String.valueOf(pieceId));
+        Files.createDirectories(pieceDir);
         String extension = resolveImageExtension(payload.mimeType);
         String storedName = prefix + "-" + System.currentTimeMillis() + "." + extension;
-        Path filePath = mediaDir.resolve(storedName).normalize();
-
-        if (!filePath.startsWith(mediaDir)) {
+        Path filePath = pieceDir.resolve(storedName).normalize();
+        if (!filePath.startsWith(pieceDir)) {
             throw new IllegalArgumentException("Nom de fichier invalide.");
         }
-
         Files.write(filePath, payload.data);
         return storedName;
+    }
+
+    private void deleteOldPieceFilesIfAny(Long demandeId, Long pieceId, String csv) throws IOException {
+        for (String name : parseUploadedFiles(csv)) {
+            Path p = demandePdfExportService.resolvePieceFile(demandeId, pieceId, name);
+            if (p != null) {
+                Files.deleteIfExists(p);
+            }
+        }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 
     private DataUrlPayload parseDataUrl(String dataUrl) {
@@ -840,18 +1005,6 @@ public class DemandeController {
             case "image/webp" -> "webp";
             default -> "png";
         };
-    }
-
-    private void deleteDemandeurFileIfExists(Long demandeId, String fileName) throws IOException {
-        if (!hasText(fileName)) {
-            return;
-        }
-
-        Path mediaDir = getDemandeurMediaDir(demandeId);
-        Path filePath = mediaDir.resolve(Paths.get(fileName).getFileName().toString()).normalize();
-        if (filePath.startsWith(mediaDir)) {
-            Files.deleteIfExists(filePath);
-        }
     }
 
     private boolean isScanTermine(StatusDemande status) {

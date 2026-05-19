@@ -23,11 +23,10 @@ demandeur :
     lieu_naissance
     genre               
     adresse_mada        
-    photo_identite      
-    signature_digital   
     id_situation_familiale  FK
     id_nationalite          FK
     id_passeport            FK
+    (photo_identite et signature_digital : voir piece_justificative "Photo d'identité" / "Signature digitale" + demande_piece_justificative)
 
 -- Pour visa TRAVAILLEUR : infos sur l'employeur à Madagascar
 employeur_madagascar :

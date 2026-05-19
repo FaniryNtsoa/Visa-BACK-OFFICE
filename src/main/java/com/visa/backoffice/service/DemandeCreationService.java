@@ -2,6 +2,7 @@ package com.visa.backoffice.service;
 
 import com.visa.backoffice.model.*;
 import com.visa.backoffice.repository.*;
+import com.visa.backoffice.support.SystemPieceLabels;
 import com.visa.backoffice.web.form.DuplicataForm;
 import com.visa.backoffice.web.form.NouvelleDemandeForm;
 import com.visa.backoffice.web.form.TransfertVisaForm;
@@ -274,6 +275,7 @@ public class DemandeCreationService {
         }
 
         createPiecesJustificativesIfPresent(form, demande);
+        ensurePhotoSignaturePieces(demande);
 
         Visa visa = null;
         CarteResidence carteResidence = null;
@@ -385,6 +387,7 @@ public class DemandeCreationService {
 
         Demande saved = demandeRepository.save(demande);
         addStatusHistory(saved, ensureStatusId("dossier cree", "dossier créé"));
+        ensurePhotoSignaturePieces(saved);
         return saved;
     }
 
@@ -398,12 +401,39 @@ public class DemandeCreationService {
             if (piece == null) {
                 continue;
             }
+            if (SystemPieceLabels.isSystemPiece(piece.getPieceJustificative())) {
+                continue;
+            }
 
             DemandePieceJustificative link = new DemandePieceJustificative();
             link.setIdDemande(demande.getIdDemande().longValue());
             link.setIdPieceJustificative(piece.getIdPieceJustificative());
             link.setDateDepot(new Date());
             demandePieceJustificativeRepository.save(link);
+        }
+    }
+
+    /**
+     * Associe à chaque demande les lignes catalogue pour la photo d'identité et la signature (fichiers dans
+     * {@code demande_piece_justificative}).
+     */
+    private void ensurePhotoSignaturePieces(Demande demande) {
+        if (demande == null || demande.getIdDemande() == null) {
+            return;
+        }
+        long idDemande = demande.getIdDemande().longValue();
+        for (String label : List.of(SystemPieceLabels.PHOTO_IDENTITE, SystemPieceLabels.SIGNATURE_DIGITALE)) {
+            pieceJustificativeRepository.findFirstByPieceJustificativeIgnoreCase(label).ifPresent(piece -> {
+                if (demandePieceJustificativeRepository
+                        .findFirstByIdDemandeAndIdPieceJustificative(idDemande, piece.getIdPieceJustificative())
+                        .isEmpty()) {
+                    DemandePieceJustificative dpj = new DemandePieceJustificative();
+                    dpj.setIdDemande(idDemande);
+                    dpj.setIdPieceJustificative(piece.getIdPieceJustificative());
+                    dpj.setDateDepot(new Date());
+                    demandePieceJustificativeRepository.save(dpj);
+                }
+            });
         }
     }
 

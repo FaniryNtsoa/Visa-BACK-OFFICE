@@ -16,6 +16,7 @@
             <div class="details-item">
                 <h3>Demande</h3>
                 <p><strong>Numero :</strong> <span th:text="${demande.idDemande}"></span></p>
+                <p><strong>Reference :</strong> <span th:text="${demande.numeroDemande != null ? demande.numeroDemande : 'N/A'}"></span></p>
                 <p><strong>Date depot :</strong> <span th:text="${demande.dateDemande != null ? #dates.format(demande.dateDemande, 'dd/MM/yyyy') : 'N/A'}"></span></p>
                 <p><strong>Type visa :</strong> <span th:text="${typeVisa != null ? typeVisa.typeVisa : 'N/A'}"></span></p>
                 <p><strong>Numero visa transformable :</strong> <span th:text="${numVisaTransformable != null && numVisaTransformable.numVisaTransformable != null ? numVisaTransformable.numVisaTransformable : 'N/A'}"></span></p>
@@ -84,17 +85,32 @@
                 <p><strong>Salaire mensuel :</strong> <span th:text="${demandeTravailleur.salaireMensuel != null ? demandeTravailleur.salaireMensuel : 'N/A'}"></span></p>
                 <p><strong>Devise salaire :</strong> <span th:text="${demandeTravailleur.deviseSalaire != null ? demandeTravailleur.deviseSalaire : 'N/A'}"></span></p>
             </div>
-            <div class="details-item">
+            <div class="details-item details-item-wide">
                 <h3>Pieces justificatives</h3>
-                <div th:if="${#lists.isEmpty(piecesJustificatives)}">Aucune piece.</div>
-                <ul th:if="${!#lists.isEmpty(piecesJustificatives)}">
-                    <li th:each="piece : ${piecesJustificatives}" th:text="${piece.pieceJustificative}"></li>
-                </ul>
+                <div th:if="${#lists.isEmpty(piecesSelectionnees)}">Aucune piece.</div>
+                <div class="piece-preview-list" th:if="${!#lists.isEmpty(piecesSelectionnees)}">
+                    <div class="piece-preview-block" th:each="dpj : ${piecesSelectionnees}">
+                        <h4 th:text="${piecesById[dpj.idPieceJustificative] != null ? piecesById[dpj.idPieceJustificative].pieceJustificative : 'Piece'}">Piece</h4>
+                        <div class="piece-files" th:if="${fichiersParPiece[dpj.idPieceJustificative] != null}">
+                            <div class="piece-file" th:each="f : ${fichiersParPiece[dpj.idPieceJustificative]}">
+                                <a th:href="${f.url}" target="_blank" rel="noopener" th:text="${f.name}">fichier</a>
+                                <img th:if="${f.image}" th:src="${f.url}" th:alt="${f.name}" class="piece-thumb" />
+                            </div>
+                        </div>
+                        <p th:if="${fichiersParPiece[dpj.idPieceJustificative] == null or #lists.isEmpty(fichiersParPiece[dpj.idPieceJustificative])}" class="media-empty">Aucun fichier depose</p>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="actions">
+        <div class="actions actions-wrap">
             <a th:href="@{/demandes/liste}" class="action-link mr-3">Retour liste</a>
-            <a th:href="@{/demandes/modifier/{id}(id=${demande.idDemande})}" class="btn-edit">Modifier</a>
+            <a th:href="@{/demandes/{id}/export/pieces-apercu(id=${demande.idDemande})}"
+               target="_blank" rel="noopener"
+               class="btn-apercu-pdf">Apercu des pieces (PDF)</a>
+            <a th:href="@{/demandes/{id}/export/lettre-recu(id=${demande.idDemande})}"
+               th:if="${scanTermine}"
+               class="btn-letter">Lettre de recu du dossier (PDF)</a>
+            <span th:if="${!scanTermine}" class="btn-letter is-disabled" title="Disponible apres scan termine">Lettre de recu du dossier</span>
             <a th:if="${canEditPhotoSignature}" th:href="@{/demandes/{id}/photo-signature(id=${demande.idDemande})}" class="btn-photo">Photo et signature</a>
             <span th:if="${!canEditPhotoSignature}" class="btn-photo is-disabled" aria-disabled="true">Photo et signature</span>
         </div>

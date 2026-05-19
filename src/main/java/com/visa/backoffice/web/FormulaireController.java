@@ -11,6 +11,7 @@ import com.visa.backoffice.repository.SituationFamilialeRepository;
 import com.visa.backoffice.repository.TypeVisaRepository;
 import com.visa.backoffice.service.DemandeCreationService;
 import com.visa.backoffice.service.FormResult;
+import com.visa.backoffice.support.SystemPieceLabels;
 import com.visa.backoffice.web.form.DuplicataForm;
 import com.visa.backoffice.web.form.NouvelleDemandeForm;
 import com.visa.backoffice.web.form.TransfertVisaForm;
@@ -174,7 +175,9 @@ public class FormulaireController {
     private void populateNouvelleDemandeModel(Model model) {
         List<TypeVisa> typeVisas = typeVisaRepository.findAll();
         model.addAttribute("typeVisas", typeVisas);
-        model.addAttribute("pieces", pieceJustificativeRepository.findAll());
+        model.addAttribute("pieces", pieceJustificativeRepository.findAll().stream()
+                .filter(p -> !SystemPieceLabels.isSystemPiece(p.getPieceJustificative()))
+                .toList());
         model.addAttribute("situations", situationFamilialeRepository.findAll());
         model.addAttribute("nationalites", nationaliteRepository.findAll());
         model.addAttribute("typeVisaCategories", buildTypeVisaCategories(typeVisas));

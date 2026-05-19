@@ -709,6 +709,93 @@ tbody tr:hover {
   box-shadow: none;
 }
 
+.details-item-wide {
+  grid-column: 1 / -1;
+}
+
+.actions-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.btn-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 11px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(135deg, #6b4f9c, #523978);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(60, 40, 100, 0.22);
+}
+
+.btn-letter.is-disabled {
+  background: #c5cedb;
+  color: #6b7786;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.btn-apercu-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 11px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(135deg, #1d7f61, #1a6a52);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(22, 110, 80, 0.22);
+}
+
+.btn-apercu-pdf:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.piece-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.piece-preview-block h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #1a4a7e;
+}
+
+.piece-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.piece-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.piece-thumb {
+  max-width: 220px;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
 .photo-signature-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

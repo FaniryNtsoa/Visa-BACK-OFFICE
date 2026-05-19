@@ -11,6 +11,7 @@ INSERT INTO status_demande (status)
 SELECT v.status
 FROM (VALUES
 	('Dossier créé'),
+	('Photo terminé'),
 	('Scan terminé'),
 	('Visa approuvé')
 ) AS v(status)
@@ -65,7 +66,9 @@ INSERT INTO piece_justificative (piece_justificative, description) VALUES
 ('Contrat de Travail', 'Contrat visé par l''EDBM ou Ministère'),
 ('Statuts Société', 'Document juridique de l''entreprise'),
 ('Certificat d''Hébergement', 'Preuve de logement à Madagascar'),
-('Copie Passeport', 'Scan de la page d''identité');
+('Copie Passeport', 'Scan de la page d''identité'),
+('Photo d''identité', 'Photo d''identité du demandeur (pièce système)'),
+('Signature digitale', 'Signature du demandeur (pièce système)');
 
 -- 2. CONFIGURATION DES OBLIGATOIRES
 -- ----------------------------------------------------------
@@ -107,9 +110,20 @@ VALUES (1, 'RAZAFY', 'Faniry', '1990-05-20', 'Masculin', 1, 1, 1);
 INSERT INTO num_visa_transformable (id, id_demandeur, num_visa_transformable, date_expiration_visa)
 VALUES (1, 1, 'TR-9988-MG', '2026-07-15');
 
--- La Demande principale
-INSERT INTO demande (id, date_demande, id_visa_transformable, id_type_demande, id_status, id_demandeur, id_type_visa)
-VALUES (1, '2026-04-22', 1, 1, 1, 1, 1);
+-- La Demande principale (statut dans demande_status_history)
+INSERT INTO demande (id, date_demande, id_visa_transformable, id_type_demande, id_demandeur, id_type_visa)
+VALUES (1, '2026-04-22', 1, 1, 1, 1);
+
+INSERT INTO demande_status_history (id_demande, id_status, date_changement_status)
+VALUES (1, 1, '2026-04-22');
+
+-- Pieces : contrat + copie passeport + photo/signature systeme (vides au depart)
+INSERT INTO demande_piece_justificative (id_demande, id_piece_justificative, photo_piece_justificative, date_depot)
+VALUES
+(1, 1, NULL, '2026-04-22'),
+(1, 4, NULL, '2026-04-22'),
+(1, 5, NULL, '2026-04-22'),
+(1, 6, NULL, '2026-04-22');
 
 -- Infos Employeur
 INSERT INTO employeur_madagascar (id, raison_sociale, numero_nif, secteur_activite)
@@ -129,8 +143,14 @@ VALUES (2, 'CN-TEST-888', '2025-06-10', '2035-06-10', 'Beijing', 'Chine');
 INSERT INTO demandeur (id, nom, prenom, date_naissance, genre, id_situation_familiale, id_nationalite, id_passeport)
 VALUES (2, 'WANG', 'Li', '1982-11-30', 'Féminin', 2, 2, 2);
 
-INSERT INTO demande (id, date_demande, id_type_demande, id_status, id_demandeur, id_type_visa)
-VALUES (2, '2026-04-20', 1, 2, 2, 2); -- Status 2 = Scan terminé
+INSERT INTO demande (id, date_demande, id_type_demande, id_demandeur, id_type_visa)
+VALUES (2, '2026-04-20', 1, 2, 2);
+
+INSERT INTO demande_status_history (id_demande, id_status, date_changement_status)
+VALUES
+(2, 1, '2026-04-18'),
+(2, 2, '2026-04-19'),
+(2, 3, '2026-04-21');
 
 INSERT INTO projet_investissement (id, nom_projet, montant_investissement, devise)
 VALUES (1, 'Usine de Recyclage', 150000000, 'MGA');
@@ -138,11 +158,13 @@ VALUES (1, 'Usine de Recyclage', 150000000, 'MGA');
 INSERT INTO demande_investisseur (id_demande, id_projet, forme_juridique, numero_registre_commerce)
 VALUES (2, 1, 'SA', 'RCS-TANA-2026-B-001');
 
--- Simulation des fichiers uploadés pour le Scan Terminé
+-- Simulation des fichiers uploades (y compris pieces systeme pour le sprint 6)
 INSERT INTO demande_piece_justificative (id_demande, id_piece_justificative, photo_piece_justificative, date_depot)
 VALUES 
 (2, 2, 'path/to/statuts.pdf', '2026-04-21'),
-(2, 4, 'path/to/passport_scan.jpg', '2026-04-21');
+(2, 4, 'path/to/passport_scan.jpg', '2026-04-21'),
+(2, 5, 'demo-photo.png', '2026-04-21'),
+(2, 6, 'demo-signature.png', '2026-04-21');
 
 
 -- 5. CAS N°3 : TRANSFERT VISA (PERTE PASSEPORT)
@@ -153,8 +175,14 @@ INSERT INTO passeport (id, numero_passeport, date_delivrance, date_expiration)
 VALUES (3, 'FR-NOUVEAU-22', '2026-04-10', '2036-04-10');
 
 -- Nouvelle demande de transfert
-INSERT INTO demande (id, date_demande, id_type_demande, id_status, id_demandeur, id_type_visa)
-VALUES (3, '2026-04-22', 2, 1, 1, 1);
+INSERT INTO demande (id, date_demande, id_type_demande, id_demandeur, id_type_visa)
+VALUES (3, '2026-04-22', 2, 1, 1);
+
+INSERT INTO demande_status_history (id_demande, id_status, date_changement_status)
+VALUES (3, 1, '2026-04-22');
+
+INSERT INTO demande_piece_justificative (id_demande, id_piece_justificative, photo_piece_justificative, date_depot)
+VALUES (3, 5, NULL, '2026-04-22'), (3, 6, NULL, '2026-04-22');
 
 
 -- 6. CAS N°4 : DUPLICATA (PERTE CARTE)
@@ -165,8 +193,14 @@ INSERT INTO carte_residence (id, numero_carte, date_debut, date_fin, is_duplicat
 VALUES (1, 'CR-776655', '2025-01-01', '2027-01-01', FALSE, 1);
 
 -- Demande de duplicata
-INSERT INTO demande (id, date_demande, id_type_demande, id_status, id_demandeur, id_type_visa)
-VALUES (4, '2026-04-22', 3, 1, 1, 1);
+INSERT INTO demande (id, date_demande, id_type_demande, id_demandeur, id_type_visa)
+VALUES (4, '2026-04-22', 3, 1, 1);
+
+INSERT INTO demande_status_history (id_demande, id_status, date_changement_status)
+VALUES (4, 1, '2026-04-22');
+
+INSERT INTO demande_piece_justificative (id_demande, id_piece_justificative, photo_piece_justificative, date_depot)
+VALUES (4, 5, NULL, '2026-04-22'), (4, 6, NULL, '2026-04-22');
 
 -- Lien vers le duplicata (Prêt pour impression)
 INSERT INTO carte_residence (id, numero_carte, date_debut, date_fin, is_duplicata, id_carte_residence_duplicata, id_passeport, id_demande)

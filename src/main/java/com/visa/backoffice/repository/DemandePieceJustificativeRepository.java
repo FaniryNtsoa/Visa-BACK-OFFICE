@@ -9,5 +9,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DemandePieceJustificativeRepository extends JpaRepository<DemandePieceJustificative, Long> {
 	List<DemandePieceJustificative> findByIdDemande(Long idDemande);
+
+	List<DemandePieceJustificative> findByIdDemandeOrderByIdDemandePieceJustificativeAsc(Long idDemande);
+
 	Optional<DemandePieceJustificative> findFirstByIdDemandeAndIdPieceJustificative(Long idDemande, Long idPieceJustificative);
 }

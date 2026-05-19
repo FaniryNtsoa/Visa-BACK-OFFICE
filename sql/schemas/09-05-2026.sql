@@ -1,3 +1,2 @@
-ALTER TABLE demandeur
-    ADD COLUMN IF NOT EXISTS photo_identite TEXT,
-    ADD COLUMN IF NOT EXISTS signature_digital TEXT;
+-- Obsolete : les colonnes photo_identite / signature_digital ne sont plus sur demandeur.
+-- Voir sql/schemas/19-05-2026.sql et les lignes catalogue piece_justificative + demande_piece_justificative.

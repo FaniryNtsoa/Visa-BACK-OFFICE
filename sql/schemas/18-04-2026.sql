@@ -30,8 +30,6 @@ CREATE TABLE demandeur (
     lieu_naissance VARCHAR(255),
     genre VARCHAR(50),
     adresse_mada TEXT,
-    photo_identite TEXT,
-    signature_digital TEXT,
     id_situation_familiale INTEGER REFERENCES situation_familiale(id),
     id_nationalite INTEGER REFERENCES nationalite(id),
     id_passeport INTEGER REFERENCES  passeport(id)
